@@ -17,6 +17,7 @@ export default function useCanvas(gridRows: number, gridCols: number, cellSize: 
   const lastPosition = useRef<Point | null>(null);
   const dragStartPoint = useRef<Point>({ x: 0, y: 0 });
   const isFloodFillRef = useRef(isFloodFill);
+  const [currentColor, setCurrentColor] = useState<string>("#000000");
 
   const [cameraOffset, setCameraOffset] = useState<Point>({ x: 0, y: 0 });
   const [cameraZoom, setCameraZoom] = useState<number>(1);
@@ -32,6 +33,10 @@ export default function useCanvas(gridRows: number, gridCols: number, cellSize: 
     );
     return initialGrid;
   });
+
+  const setPredefinedColor = (color: string) => {
+    setCurrentColor(color);
+  };
 
   useEffect(() => {
     isFloodFillRef.current = isFloodFill;
@@ -99,9 +104,9 @@ export default function useCanvas(gridRows: number, gridCols: number, cellSize: 
       isDrawing.current = true;
       lastPosition.current = position;
       if (isFloodFillRef.current) {
-        handleFloodFill(adjustedX, adjustedY, 'black');
+        handleFloodFill(adjustedX, adjustedY, currentColor);
       } else {
-        updateCellColor(adjustedX, adjustedY, 'black');
+        updateCellColor(adjustedX, adjustedY, currentColor);
       }
     }
   };
@@ -119,7 +124,7 @@ export default function useCanvas(gridRows: number, gridCols: number, cellSize: 
       setCameraOffset(newCam);
     } else if (isDrawing.current) {
       if (lastPosition.current) {
-        updateCellColor(adjustedX, adjustedY, 'black');
+        updateCellColor(adjustedX, adjustedY, currentColor);
         lastPosition.current = position;
       }
     } else {
@@ -230,5 +235,5 @@ export default function useCanvas(gridRows: number, gridCols: number, cellSize: 
     };
   }, [cameraOffset, cameraZoom, grid, cellSize, hoveredCell]);
 
-  return { canvasRef };
+  return { canvasRef ,currentColor, setCurrentColor, setPredefinedColor};
 }
