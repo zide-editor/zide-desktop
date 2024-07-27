@@ -6,6 +6,7 @@ import useWindow from "@/hooks/useWindow";
 import { MENU_DATA } from "@/utils/libs";
 import { TypeSelectableMenu } from "@/utils/type";
 import { useState } from "react";
+import { ArrowForward } from "@material-ui/icons";
 
 const primaryColors = [
   {
@@ -35,6 +36,116 @@ const primaryColors = [
 ];
 
 export default function Home() {
+  const [started, setStarted] = useState(false)
+  return (
+    <>
+      { !started ? <StartUp setStarted={setStarted}/> : <ProjectArena/> }
+    </>
+  );
+}
+
+function ConfigProject ({ setStarted } : { setStarted: React.Dispatch<React.SetStateAction<boolean>>}) {
+  const [name, setName] = useState("")
+  const [rows, setCols] = useState(8)
+  const [cols, setRows] = useState(8)
+
+  const SubmitCreate = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    console.log(name, rows, cols)
+    setStarted(true)
+  } 
+
+  return(
+    <main className="fixed inset-0 flex justify-center items-center bg-black bg-opacity-50 z-50">
+      <form className="bg-white p-4 border-4 border-black" onSubmit={ (e) => SubmitCreate(e) }>
+        <h2 className="text-xl font-semibold mb-4">Configure Project</h2>
+        <div className="flex flex-col gap-5 justify-center items-center">
+
+          <div className="flex items-center justify-center">
+            <div className="flex justify-center items-center text-md font-semibold px-1"> Name </div>
+              <input
+                placeholder="Untitled"
+                value={name}
+                onChange={ (e) => setName(e.target.value) }
+                className="w-9/11 py-2 px-3 border-2 border-black"
+              />
+          </div>
+
+          <div className="flex gap-2">
+            <div className="flex justify-center items-center text-md font-semibold"> Rows </div>
+            <input
+              type="number"
+              value={rows}
+              onChange={ (e) => setRows(e.target.valueAsNumber) }
+              placeholder="0"
+              className="w-20 py-2 px-2 border-2 border-black"
+            />
+
+            <div className="flex justify-center items-center text-md font-semibold"> Column </div>
+            <input
+              type="number"
+              placeholder="0"
+              value={cols}
+              onChange={ (e) => setCols(e.target.valueAsNumber) }
+              className="w-20 py-2 px-2 border-2 border-black"
+            />
+          </div>
+
+          <button className="px-5 py-3 bg-black text-white">
+            Create
+          </button>
+
+        </div>
+      </form>
+    </main>
+  )
+}
+
+function OpenProject ({ setStarted } : { setStarted: React.Dispatch<React.SetStateAction<boolean>>}) {
+  return(
+    <main className="fixed inset-0 flex justify-center items-center bg-black bg-opacity-50 z-50">
+      <div className="bg-white">
+      </div>
+    </main>
+  )
+}
+
+function StartUp ( { setStarted } : { setStarted: React.Dispatch<React.SetStateAction<boolean>> } ) {
+  const [ config, setConfig ] = useState(false)
+  const [ newProject, setNewProject ] = useState(false)
+  return (
+    <main className="h-screen w-full flex justify-center items-center bg-[#F3EEE3]">
+      { config && (
+        newProject ? <ConfigProject setStarted={setStarted}/> : <OpenProject setStarted={setStarted}/>
+      ) }
+      <div className="border-4 border-black flex flex-col gap-2 p-2">
+        <button className="p-3 border-2 bg-white text-center border-black"
+          onClick = { () => {
+            setConfig(true)
+            setNewProject(true)
+          } }
+        >
+          <span className="mr-2 font-semibold">
+            Create New Project
+          </span>
+          <ArrowForward/>
+        </button>
+        <button className="p-3 border-2 bg-white text-center border-black"
+          onClick = { () => {
+            setConfig(true)
+          } }
+        >
+          <span className="mr-2 font-semibold">
+            Open Project
+          </span>
+          <ArrowForward/>
+        </button>
+      </div>
+    </main>
+  )
+}
+
+function ProjectArena() {
   const {
     canvasRef,
     setSelectedTool,
@@ -46,7 +157,6 @@ export default function Home() {
     setPredefinedColor,
   } = useCanvas(8, 8, 50);
   const { windowDim } = useWindow();
-
   return (
     <main className="h-screen w-full bg-[#F3EEE3] relative flex items-center justify-center">
       <Navbar />
@@ -106,7 +216,7 @@ export default function Home() {
 
       <section className="w-3/4 h-32 bg-[#D9D0BE] absolute bottom-0"></section>
     </main>
-  );
+  )
 }
 
 function Navbar() {
