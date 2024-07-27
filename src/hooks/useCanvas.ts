@@ -37,6 +37,9 @@ export default function useCanvas(gridRows: number, gridCols: number, cellSize: 
   const setPredefinedColor = (color: string) => {
     setCurrentColor(color);
   };
+   
+  const undoStack = useRef<GridCell[][][]>([]);
+  const redoStack = useRef<GridCell[][][]>([]);
 
   useEffect(() => {
     isFloodFillRef.current = isFloodFill;
@@ -92,6 +95,31 @@ export default function useCanvas(gridRows: number, gridCols: number, cellSize: 
     }
   };
 
+  const saveStateToUndoStack = () => {
+    undoStack.current = [...undoStack.current, grid.map(row => row.map(cell => ({ ...cell })))];
+    redoStack.current = [];
+  };
+
+  const undo = () => {
+    if (undoStack.current.length > 0) {
+      const previousState = undoStack.current.pop();
+      if (previousState) {
+        redoStack.current = [...redoStack.current, grid];
+        setGrid(previousState);
+      }
+    }
+  };
+
+  const redo = () => {
+    if (redoStack.current.length > 0) {
+      const nextState = redoStack.current.pop();
+      if (nextState) {
+        undoStack.current = [...undoStack.current, grid];
+        setGrid(nextState);
+      }
+    }
+  };
+
   const mouseDownHandler = (e: MouseEvent) => {
     const position = computeCoords(e) || { x: 0, y: 0 };
     const adjustedX = (position.x - cameraOffset.x) / cameraZoom;
@@ -103,6 +131,7 @@ export default function useCanvas(gridRows: number, gridCols: number, cellSize: 
     } else if (e.button === 0) {
       isDrawing.current = true;
       lastPosition.current = position;
+      saveStateToUndoStack();   
       if (isFloodFillRef.current) {
         handleFloodFill(adjustedX, adjustedY, currentColor);
       } else {
@@ -146,6 +175,12 @@ export default function useCanvas(gridRows: number, gridCols: number, cellSize: 
   const keyDownHandler = (e: KeyboardEvent) => {
     if (e.code === 'Space') {
       isSpacebarHeld.current = true;
+    }
+    if (e.ctrlKey && e.code === 'KeyZ') {   
+      undo();
+    }
+    if (e.ctrlKey && e.code === 'KeyY') {   
+      redo();
     }
   };
 
