@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { computeCoords } from "@/utils/libs";
-import { Point } from "@/utils/type";
+import { TypeSelectable, TypePoint } from "@/utils/type";
 
 type GridCell = {
   x: number;
@@ -9,27 +9,39 @@ type GridCell = {
   originalColor: string;
 };
 
-export default function useCanvas(gridRows: number, gridCols: number, cellSize: number, isFloodFill: boolean) {
+export default function useCanvas(
+  gridRows: number,
+  gridCols: number,
+  cellSize: number,
+) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  const [isFloodFill, setIsFloodFill] = useState(false);
+
   const isDragging = useRef<boolean>(false);
   const isDrawing = useRef<boolean>(false);
   const isSpacebarHeld = useRef<boolean>(false);
-  const lastPosition = useRef<Point | null>(null);
-  const dragStartPoint = useRef<Point>({ x: 0, y: 0 });
+  const lastPosition = useRef<TypePoint | null>(null);
+  const dragStartPoint = useRef<TypePoint>({ x: 0, y: 0 });
   const isFloodFillRef = useRef(isFloodFill);
   const [currentColor, setCurrentColor] = useState<string>("#000000");
 
-  const [cameraOffset, setCameraOffset] = useState<Point>({ x: 0, y: 0 });
+  const [selectedTool, setSelectedTool] = useState<TypeSelectable>("pencil");
+
+  const [cameraOffset, setCameraOffset] = useState<TypePoint>({ x: 0, y: 0 });
   const [cameraZoom, setCameraZoom] = useState<number>(1);
-  const [hoveredCell, setHoveredCell] = useState<{ row: number, col: number } | null>(null);
+  const [hoveredCell, setHoveredCell] = useState<{
+    row: number;
+    col: number;
+  } | null>(null);
   const [grid, setGrid] = useState<GridCell[][]>(() => {
     const initialGrid = Array.from({ length: gridRows }, (_, row) =>
       Array.from({ length: gridCols }, (_, col) => ({
         x: col * cellSize,
         y: row * cellSize,
-        color: 'white',
-        originalColor: 'white',
-      }))
+        color: "white",
+        originalColor: "white",
+      })),
     );
     return initialGrid;
   });
@@ -37,7 +49,7 @@ export default function useCanvas(gridRows: number, gridCols: number, cellSize: 
   const setPredefinedColor = (color: string) => {
     setCurrentColor(color);
   };
-   
+
   const undoStack = useRef<GridCell[][][]>([]);
   const redoStack = useRef<GridCell[][][]>([]);
 
@@ -57,14 +69,20 @@ export default function useCanvas(gridRows: number, gridCols: number, cellSize: 
         r.map((cell, colIndex) =>
           rowIndex === row && colIndex === col
             ? { ...cell, color, originalColor: color }
-            : cell
-        )
+            : cell,
+        ),
       );
       setGrid(newGrid);
     }
   };
 
-  const floodFillUtil = (grid: Array<Array<GridCell>>, row: number, col: number, targetColor: string, replacementColor: string) => {
+  const floodFillUtil = (
+    grid: Array<Array<GridCell>>,
+    row: number,
+    col: number,
+    targetColor: string,
+    replacementColor: string,
+  ) => {
     if (targetColor === replacementColor) return;
 
     const fillStack = [[row, col]];
@@ -72,8 +90,10 @@ export default function useCanvas(gridRows: number, gridCols: number, cellSize: 
     while (fillStack.length) {
       const [currentRow, currentCol] = fillStack.pop() || [0, 0];
       if (
-        currentRow >= 0 && currentRow < grid.length &&
-        currentCol >= 0 && currentCol < grid[0].length &&
+        currentRow >= 0 &&
+        currentRow < grid.length &&
+        currentCol >= 0 &&
+        currentCol < grid[0].length &&
         grid[currentRow][currentCol].color === targetColor
       ) {
         grid[currentRow][currentCol].color = replacementColor;
@@ -89,14 +109,17 @@ export default function useCanvas(gridRows: number, gridCols: number, cellSize: 
     const { col, row } = getCellCoords(x, y);
     if (grid[row] && grid[row][col]) {
       const targetColor = grid[row][col].color;
-      const newGrid = grid.map(row => row.map(cell => ({ ...cell })));
+      const newGrid = grid.map((row) => row.map((cell) => ({ ...cell })));
       floodFillUtil(newGrid, row, col, targetColor, fillColor);
       setGrid(newGrid);
     }
   };
 
   const saveStateToUndoStack = () => {
-    undoStack.current = [...undoStack.current, grid.map(row => row.map(cell => ({ ...cell })))];
+    undoStack.current = [
+      ...undoStack.current,
+      grid.map((row) => row.map((cell) => ({ ...cell }))),
+    ];
     redoStack.current = [];
   };
 
@@ -131,7 +154,7 @@ export default function useCanvas(gridRows: number, gridCols: number, cellSize: 
     } else if (e.button === 0) {
       isDrawing.current = true;
       lastPosition.current = position;
-      saveStateToUndoStack();   
+      saveStateToUndoStack();
       if (isFloodFillRef.current) {
         handleFloodFill(adjustedX, adjustedY, currentColor);
       } else {
@@ -173,19 +196,19 @@ export default function useCanvas(gridRows: number, gridCols: number, cellSize: 
   };
 
   const keyDownHandler = (e: KeyboardEvent) => {
-    if (e.code === 'Space') {
+    if (e.code === "Space") {
       isSpacebarHeld.current = true;
     }
-    if (e.ctrlKey && e.code === 'KeyZ') {   
+    if (e.ctrlKey && e.code === "KeyZ") {
       undo();
     }
-    if (e.ctrlKey && e.code === 'KeyY') {   
+    if (e.ctrlKey && e.code === "KeyY") {
       redo();
     }
   };
 
   const keyUpHandler = (e: KeyboardEvent) => {
-    if (e.code === 'Space') {
+    if (e.code === "Space") {
       isSpacebarHeld.current = false;
       isDragging.current = false;
     }
@@ -222,9 +245,14 @@ export default function useCanvas(gridRows: number, gridCols: number, cellSize: 
 
     grid.forEach((row, rowIndex) => {
       row.forEach((cell, colIndex) => {
-        ctx.fillStyle = (hoveredCell && hoveredCell.row === rowIndex && hoveredCell.col === colIndex) ? '#75726C' : cell.color;
+        ctx.fillStyle =
+          hoveredCell &&
+            hoveredCell.row === rowIndex &&
+            hoveredCell.col === colIndex
+            ? "#75726C"
+            : cell.color;
         ctx.fillRect(cell.x, cell.y, cellSize, cellSize);
-        ctx.strokeStyle = 'black';
+        ctx.strokeStyle = "black";
         ctx.strokeRect(cell.x, cell.y, cellSize, cellSize);
       });
     });
@@ -270,5 +298,14 @@ export default function useCanvas(gridRows: number, gridCols: number, cellSize: 
     };
   }, [cameraOffset, cameraZoom, grid, cellSize, hoveredCell]);
 
-  return { canvasRef ,currentColor, setCurrentColor, setPredefinedColor};
+  return {
+    isFloodFill,
+    setIsFloodFill,
+    selectedTool,
+    setSelectedTool,
+    canvasRef,
+    currentColor,
+    setCurrentColor,
+    setPredefinedColor,
+  };
 }
