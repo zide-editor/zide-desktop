@@ -103,8 +103,8 @@ export default function useCanvas(gridRows: number, gridCols: number, cellSize: 
       }
     }
     dragStartPoint.current = {
-      x: (position.x / cameraZoom) - cameraOffset.x,
-      y: (position.y / cameraZoom) - cameraOffset.y,
+      x: position.x / cameraZoom - cameraOffset.x,
+      y: position.y / cameraZoom - cameraOffset.y,
     };
   };
 
@@ -113,8 +113,8 @@ export default function useCanvas(gridRows: number, gridCols: number, cellSize: 
       if (!canvasRef.current) return;
       const position = computeCoords(e) || { x: 0, y: 0 };
       const newCam = {
-        x: (position.x / cameraZoom) - dragStartPoint.current.x,
-        y: (position.y / cameraZoom) - dragStartPoint.current.y,
+        x: position.x / cameraZoom - dragStartPoint.current.x,
+        y: position.y / cameraZoom - dragStartPoint.current.y,
       };
       setCameraOffset(newCam);
     } else if (isDrawing.current) {
@@ -144,6 +144,19 @@ export default function useCanvas(gridRows: number, gridCols: number, cellSize: 
       isSpacebarHeld.current = false;
       isDragging.current = false;  
     }
+  };
+
+  const wheelHandler = (e: WheelEvent) => {
+    e.preventDefault();
+
+    const zoomSensitivity = 0.001;
+    const newZoom = cameraZoom - e.deltaY * zoomSensitivity;
+
+    const minZoom = 0.5;
+    const maxZoom = 3;
+    const clampedZoom = Math.min(maxZoom, Math.max(minZoom, newZoom));
+
+    setCameraZoom(clampedZoom);
   };
 
   const drawCanvas = (ctx: CanvasRenderingContext2D) => {
@@ -186,6 +199,7 @@ export default function useCanvas(gridRows: number, gridCols: number, cellSize: 
     canvasElement.addEventListener("mousedown", mouseDownHandler);
     canvasElement.addEventListener("mouseup", mouseUpHandler);
     canvasElement.addEventListener("mousemove", mouseMoveHandler);
+    canvasElement.addEventListener("wheel", wheelHandler);
 
     window.addEventListener("resize", resizeHandler);
     window.addEventListener("keydown", keyDownHandler);
@@ -198,8 +212,10 @@ export default function useCanvas(gridRows: number, gridCols: number, cellSize: 
       window.removeEventListener("resize", resizeHandler);
       window.removeEventListener("keydown", keyDownHandler);
       window.removeEventListener("keyup", keyUpHandler);
+      canvasElement.removeEventListener("wheel", wheelHandler);
     };
-  }, [cameraOffset, grid, cellSize]);
+  }, [cameraOffset, cameraZoom, grid, cellSize]);
 
-  return { canvasRef, cameraZoom, setCameraZoom };
+  return { canvasRef };
 }
+
