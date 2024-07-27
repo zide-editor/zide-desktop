@@ -13,6 +13,9 @@ export default function useCanvas(
   gridRows: number,
   gridCols: number,
   cellSize: number,
+  grids: GridCell[][][],
+  handleGridChange,
+  currentIndex: number
 ) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -34,17 +37,8 @@ export default function useCanvas(
     row: number;
     col: number;
   } | null>(null);
-  const [grid, setGrid] = useState<GridCell[][]>(() => {
-    const initialGrid = Array.from({ length: gridRows }, (_, row) =>
-      Array.from({ length: gridCols }, (_, col) => ({
-        x: col * cellSize,
-        y: row * cellSize,
-        color: "white",
-        originalColor: "white",
-      })),
-    );
-    return initialGrid;
-  });
+  
+  const [grid, setGrid] = useState<GridCell[][]>(grids[currentIndex]);
 
   const setPredefinedColor = (color: string) => {
     setCurrentColor(color);
@@ -56,6 +50,10 @@ export default function useCanvas(
   useEffect(() => {
     isFloodFillRef.current = isFloodFill;
   }, [isFloodFill]);
+
+  useEffect(() => {
+    setGrid(grids[currentIndex]);
+  }, [currentIndex, grids]);
 
   const getCellCoords = (x: number, y: number) => ({
     col: Math.floor(x / cellSize),
@@ -73,6 +71,7 @@ export default function useCanvas(
         ),
       );
       setGrid(newGrid);
+      handleGridChange(currentIndex, newGrid);
     }
   };
 
@@ -112,6 +111,7 @@ export default function useCanvas(
       const newGrid = grid.map((row) => row.map((cell) => ({ ...cell })));
       floodFillUtil(newGrid, row, col, targetColor, fillColor);
       setGrid(newGrid);
+      handleGridChange(currentIndex, newGrid);
     }
   };
 
@@ -129,6 +129,7 @@ export default function useCanvas(
       if (previousState) {
         redoStack.current = [...redoStack.current, grid];
         setGrid(previousState);
+        handleGridChange(currentIndex, previousState);
       }
     }
   };
@@ -139,6 +140,7 @@ export default function useCanvas(
       if (nextState) {
         undoStack.current = [...undoStack.current, grid];
         setGrid(nextState);
+        handleGridChange(currentIndex, nextState);
       }
     }
   };

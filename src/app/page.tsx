@@ -1,38 +1,20 @@
 "use client";
 
-import useCanvas from "@/hooks/useCanvas";
+import React, { useState } from 'react';
 import { HexColorPicker } from "react-colorful";
+import useCanvas from "@/hooks/useCanvas";
 import useWindow from "@/hooks/useWindow";
 import { MENU_DATA } from "@/utils/libs";
 import { TypeSelectableMenu } from "@/utils/type";
-import { useState } from "react";
 import { ArrowForward } from "@material-ui/icons";
 
 const primaryColors = [
-  {
-    name: "cyan",
-    code: "#00FFFF",
-  },
-  {
-    name: "red",
-    code: "#FF0000",
-  },
-  {
-    name: "green",
-    code: "#00FF00",
-  },
-  {
-    name: "blue",
-    code: "#0000FF",
-  },
-  {
-    name: "yellow",
-    code: "#FFFF00",
-  },
-  {
-    name: "magenta",
-    code: "#FF00FF",
-  },
+  { name: "cyan", code: "#00FFFF" },
+  { name: "red", code: "#FF0000" },
+  { name: "green", code: "#00FF00" },
+  { name: "blue", code: "#0000FF" },
+  { name: "yellow", code: "#FFFF00" },
+  { name: "magenta", code: "#FF00FF" },
 ];
 
 export default function Home() {
@@ -146,33 +128,61 @@ function StartUp ( { setStarted } : { setStarted: React.Dispatch<React.SetStateA
 }
 
 function ProjectArena() {
+  const [grids, setGrids] = useState<GridCell[][][]>([
+    Array.from({ length: 8 }, (_, row) => Array.from({ length: 8 }, (_, col) => ({
+      x: col * 50,
+      y: row * 50,
+      color: "white",
+      originalColor: "white",
+    }))),
+  ]);
+
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [selectedMenu, setSelectedMenu] = useState<TypeSelectableMenu>("none");
+
+  const handleGridChange = (index: number, newGrid: GridCell[][]) => {
+    const updatedGrids = [...grids];
+    updatedGrids[index] = newGrid;
+    setGrids(updatedGrids);
+  };
+
+  const handleAddGrid = () => {
+    setGrids([...grids, 
+    Array.from({ length: 8 }, (_, row) => Array.from({ length: 8 }, (_, col) => ({
+      x: col * 50,
+      y: row * 50,
+      color: "white",
+      originalColor: "white",
+    })))])
+    setCurrentIndex(grids.length);  // Switch to the newly added grid
+  };
+
+  const handleSelectGrid = (index: number) => {
+    setCurrentIndex(index);
+  };
+
   const {
     canvasRef,
+    setCurrentColor,
+    setIsFloodFill,
     setSelectedTool,
     selectedTool,
-    setIsFloodFill,
     isFloodFill,
     currentColor,
-    setCurrentColor,
     setPredefinedColor,
-  } = useCanvas(8, 8, 50);
+  } = useCanvas(
+    8,
+    8,
+    50,
+    grids,
+    handleGridChange,
+    currentIndex,
+  );
+
   const { windowDim } = useWindow();
   return (
     <main className="h-screen w-full bg-[#F3EEE3] relative flex items-center justify-center">
-      <Navbar />
-
-      <canvas
-        ref={canvasRef}
-        height={windowDim.current?.x || 0}
-        width={windowDim.current?.y || 0}
-      ></canvas>
-
-      <button
-        className="text-white absolute bottom-0 right-0"
-        onClick={() => setIsFloodFill(!isFloodFill)}
-      >
-        {isFloodFill ? "FILL MODE" : "DRAW MODE"}
-      </button>
+      <Navbar selectedMenu={selectedMenu} setSelectedMenu={setSelectedMenu} />
 
       <div className="absolute top-16 right-4 p-2 bg-white rounded-lg shadow-md">
         <HexColorPicker color={currentColor} onChange={setCurrentColor} />
@@ -184,7 +194,7 @@ function ProjectArena() {
               className={`flex gap-1 items-center rounded-md py-1 ${color.code === currentColor ? "bg-black/5 " : ""}`}
             >
               <button
-                className={`w-6 h-6 m-1 rounded-md cursor-pointer`}
+                className="w-6 h-6 m-1 rounded-md cursor-pointer"
                 style={{ backgroundColor: color.code }}
               />
               <h3>{color.name}</h3>
@@ -192,6 +202,13 @@ function ProjectArena() {
           ))}
         </div>
       </div>
+
+      <button
+        className="text-white absolute bottom-0 right-0"
+        onClick={() => setIsFloodFill(!isFloodFill)}
+      >
+        {isFloodFill ? "FILL MODE" : "DRAW MODE"}
+      </button>
 
       <section className="w-24 h-1/3 bg-[#D9D0BE] absolute bottom-0 top-0 left-0 my-auto z-[999] flex flex-col justify-around">
         <section
@@ -214,23 +231,32 @@ function ProjectArena() {
         </section>
       </section>
 
-      <section className="w-3/4 h-32 bg-[#D9D0BE] absolute bottom-0"></section>
+      <section className="w-3/4 h-32 bg-[#D9D0BE] absolute bottom-0">
+                    {grids.map((_, index) => (
+                        <button key={index} className="h-5 w-5 bg-white" onClick={() => handleSelectGrid(index)}></button>
+                    ))}
+                    <button onClick={handleAddGrid}>Add Grid</button>
+                </section>
+
+
+      <canvas
+        key={currentIndex}
+        ref={canvasRef}
+        height={windowDim.current?.x || 0}
+        width={windowDim.current?.y || 0}
+      />
     </main>
-  )
-}
+  );
+};
 
-function Navbar() {
-  const [selectedMenu, setSelectedMenu] = useState<TypeSelectableMenu>("none");
-  MENU_DATA;
-
+const Navbar = ({ selectedMenu, setSelectedMenu }: { selectedMenu: TypeSelectableMenu, setSelectedMenu: React.Dispatch<React.SetStateAction<TypeSelectableMenu>> }) => {
   return (
     <nav className="p-5 w-full h-14 bg-[#D9D0BE] font-bold font-mono absolute top-0 flex space-x-5 items-center z-[999] select-none">
       <section className="relative">
         <h1
           className={`cursor-pointer ${selectedMenu === "file" && "text-[#8D75F1]"}`}
           onClick={() => {
-            if (selectedMenu === "none") setSelectedMenu("file");
-            else setSelectedMenu("none");
+            setSelectedMenu(selectedMenu === "file" ? "none" : "file");
           }}
         >
           FILE
@@ -238,15 +264,9 @@ function Navbar() {
         <div
           className={`absolute bg-[#F3EEE3] border border-black w-48 px-5 py-3 ${selectedMenu !== "file" && "hidden"}`}
         >
-          <h1 className="text-black hover:text-[#8D75F1] cursor-pointer">
-            New File
-          </h1>
-          <h1 className="text-black hover:text-[#8D75F1] cursor-pointer">
-            Export
-          </h1>
-          <h1 className="text-black hover:text-[#8D75F1] cursor-pointer">
-            Exit
-          </h1>
+          <h1 className="text-black hover:text-[#8D75F1] cursor-pointer">New File</h1>
+          <h1 className="text-black hover:text-[#8D75F1] cursor-pointer">Export</h1>
+          <h1 className="text-black hover:text-[#8D75F1] cursor-pointer">Exit</h1>
         </div>
       </section>
 
@@ -254,8 +274,7 @@ function Navbar() {
         <h1
           className={`cursor-pointer ${selectedMenu === "edit" && "text-[#8D75F1]"}`}
           onClick={() => {
-            if (selectedMenu === "none") setSelectedMenu("edit");
-            else setSelectedMenu("none");
+            setSelectedMenu(selectedMenu === "edit" ? "none" : "edit");
           }}
         >
           EDIT
@@ -263,12 +282,8 @@ function Navbar() {
         <div
           className={`absolute bg-[#F3EEE3] border border-black w-48 px-5 py-3 ${selectedMenu !== "edit" && "hidden"}`}
         >
-          <h1 className="text-black hover:text-[#8D75F1] cursor-pointer">
-            Undo
-          </h1>
-          <h1 className="text-black hover:text-[#8D75F1] cursor-pointer">
-            Redo
-          </h1>
+          <h1 className="text-black hover:text-[#8D75F1] cursor-pointer">Undo</h1>
+          <h1 className="text-black hover:text-[#8D75F1] cursor-pointer">Redo</h1>
         </div>
       </section>
 
@@ -276,8 +291,7 @@ function Navbar() {
         <h1
           className={`cursor-pointer ${selectedMenu === "help" && "text-[#8D75F1]"}`}
           onClick={() => {
-            if (selectedMenu === "none") setSelectedMenu("help");
-            else setSelectedMenu("none");
+            setSelectedMenu(selectedMenu === "help" ? "none" : "help");
           }}
         >
           HELP
@@ -285,4 +299,4 @@ function Navbar() {
       </section>
     </nav>
   );
-}
+};
