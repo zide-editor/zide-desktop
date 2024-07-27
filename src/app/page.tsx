@@ -3,7 +3,7 @@
 import useCanvas from "@/hooks/useCanvas";
 
 export default function Home() {
-  const { canvasRef } = useCanvas();
+  const { canvasRef } = useCanvas(8, 8, 50);
 
   return (
     <main className="h-screen w-full bg-[#F3EEE3] relative flex items-center justify-center">
