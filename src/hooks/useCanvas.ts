@@ -7,8 +7,8 @@ export default function useCanvas() {
   const isDragging = useRef<boolean>(false);
 
   const [cameraOffset, setCameraOffset] = useState<Point>({
-    x: window.innerWidth,
-    y: window.innerHeight,
+    x: 0,
+    y: 0,
   });
   const dragStartPoint = useRef<Point>({ x: 0, y: 0 });
 
@@ -20,17 +20,34 @@ export default function useCanvas() {
       y: position.y - cameraOffset.y,
     };
   };
+
   const mouseMoveHandler = (e: MouseEvent) => {
     if (isDragging.current) {
+      if (!canvasRef.current) return;
       const position = compouteCords(e) || { x: 0, y: 0 };
-      const newCam = { x: 0, y: 0 };
-      newCam.x = position.x - dragStartPoint.current.x;
-      newCam.y = position.y - dragStartPoint.current.y;
+      const newCam = {
+        x: position.x - dragStartPoint.current.x,
+        y: position.y - dragStartPoint.current.y,
+      };
       setCameraOffset(newCam);
     }
   };
+
   const mouseUpHandler = () => {
     isDragging.current = false;
+  };
+
+  const drawCanvas = (ctx: CanvasRenderingContext2D) => {
+    ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+    ctx.save(); 
+
+    
+    ctx.translate(cameraOffset.x, cameraOffset.y);
+
+    ctx.fillStyle = "#eecc77";
+    ctx.fillRect(20, 20, 100, 100);
+
+    ctx.restore(); 
   };
 
   useEffect(() => {
@@ -39,27 +56,19 @@ export default function useCanvas() {
     const ctx = canvasRef.current.getContext("2d");
     if (!ctx) return;
 
-    ctx.translate(window.innerWidth / 2, window.innerHeight / 2);
-    ctx.fillStyle = "#eecc77";
+    drawCanvas(ctx);
 
-    ctx.fillRect(20, 20, 100, 100);
-    ctx.translate(
-      -window.innerWidth / 2 + cameraOffset.x,
-      -window.innerHeight / 2 + cameraOffset.y,
-    );
-    ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
-
-    canvasRef.current.addEventListener("mousedown", mouseDownHandler);
-    canvasRef.current.addEventListener("mouseup", mouseUpHandler);
-    canvasRef.current.addEventListener("mousemove", mouseMoveHandler);
+    const canvasElement = canvasRef.current;
+    canvasElement.addEventListener("mousedown", mouseDownHandler);
+    canvasElement.addEventListener("mouseup", mouseUpHandler);
+    canvasElement.addEventListener("mousemove", mouseMoveHandler);
 
     return () => {
-      canvasRef.current?.removeEventListener("mousedown", mouseDownHandler);
-      canvasRef.current?.removeEventListener("mouseup", mouseUpHandler);
-      canvasRef.current?.removeEventListener("mousemove", mouseMoveHandler);
+      canvasElement.removeEventListener("mousedown", mouseDownHandler);
+      canvasElement.removeEventListener("mouseup", mouseUpHandler);
+      canvasElement.removeEventListener("mousemove", mouseMoveHandler);
     };
   }, [cameraOffset]);
-  console.log(cameraOffset)
 
   return { canvasRef };
 }
