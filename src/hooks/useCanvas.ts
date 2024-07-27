@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { compouteCords } from "@/utils/libs";
+import { computeCoords } from "@/utils/libs";
 import { Point } from "@/utils/type";
 
 type GridCell = {
@@ -8,17 +8,17 @@ type GridCell = {
   color: string;
 };
 
-export default function useCanvas(gridRows: number, gridCols: number, cellSize: number) {
+export default function useCanvas(gridRows: number, gridCols: number, cellSize: number, isFloodFill: boolean) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const isDragging = useRef<boolean>(false);
   const isDrawing = useRef<boolean>(false);
   const isSpacebarHeld = useRef<boolean>(false);
   const lastPosition = useRef<Point | null>(null);
   const dragStartPoint = useRef<Point>({ x: 0, y: 0 });
+  const isFloodFillRef = useRef(isFloodFill);
 
   const [cameraOffset, setCameraOffset] = useState<Point>({ x: 0, y: 0 });
   const [grid, setGrid] = useState<GridCell[][]>(() => {
-     
     const initialGrid = Array.from({ length: gridRows }, (_, row) =>
       Array.from({ length: gridCols }, (_, col) => ({
         x: col * cellSize,
@@ -28,6 +28,10 @@ export default function useCanvas(gridRows: number, gridCols: number, cellSize: 
     );
     return initialGrid;
   });
+
+  useEffect(() => {
+    isFloodFillRef.current = isFloodFill;
+  }, [isFloodFill]);
 
   const getCellCoords = (x: number, y: number) => ({
     col: Math.floor(x / cellSize),
@@ -48,25 +52,61 @@ export default function useCanvas(gridRows: number, gridCols: number, cellSize: 
     }
   };
 
-  const mouseDownHandler = (e: MouseEvent) => {
-    const position = compouteCords(e) || { x: 0, y: 0 };
+  const floodFillUtil = (grid, row, col, targetColor, replacementColor) => {
+    if (targetColor === replacementColor) return;
+
+    const fillStack = [[row, col]];
+
+    while (fillStack.length) {
+      const [currentRow, currentCol] = fillStack.pop();
+      if (
+        currentRow >= 0 && currentRow < grid.length &&
+        currentCol >= 0 && currentCol < grid[0].length &&
+        grid[currentRow][currentCol].color === targetColor
+      ) {
+        grid[currentRow][currentCol].color = replacementColor;
+
+        fillStack.push([currentRow + 1, currentCol]);
+        fillStack.push([currentRow - 1, currentCol]);
+        fillStack.push([currentRow, currentCol + 1]);
+        fillStack.push([currentRow, currentCol - 1]);
+      }
+    }
+  };
+
+  const handleFloodFill = (x, y, fillColor) => {
+    const { col, row } = getCellCoords(x, y);
+    if (grid[row] && grid[row][col]) {
+      const targetColor = grid[row][col].color;
+      const newGrid = grid.map(row => row.map(cell => ({ ...cell })));
+      floodFillUtil(newGrid, row, col, targetColor, fillColor);
+      setGrid(newGrid);
+    }
+  };
+
+  const mouseDownHandler = (e) => {
+    const position = computeCoords(e) || { x: 0, y: 0 };
     if (isSpacebarHeld.current) {
       isDragging.current = true;
       dragStartPoint.current = {
         x: position.x - cameraOffset.x,
         y: position.y - cameraOffset.y,
       };
-    } else if (e.button === 0) {  
+    } else if (e.button === 0) {
       isDrawing.current = true;
       lastPosition.current = position;
-      updateCellColor(position.x - cameraOffset.x, position.y - cameraOffset.y, 'black');  
+      if (isFloodFillRef.current) {
+        handleFloodFill(position.x - cameraOffset.x, position.y - cameraOffset.y, 'black');
+      } else {
+        updateCellColor(position.x - cameraOffset.x, position.y - cameraOffset.y, 'black');
+      }
     }
   };
 
   const mouseMoveHandler = (e: MouseEvent) => {
     if (isDragging.current) {
       if (!canvasRef.current) return;
-      const position = compouteCords(e) || { x: 0, y: 0 };
+      const position = computeCoords(e) || { x: 0, y: 0 };
       const newCam = {
         x: position.x - dragStartPoint.current.x,
         y: position.y - dragStartPoint.current.y,
@@ -74,7 +114,7 @@ export default function useCanvas(gridRows: number, gridCols: number, cellSize: 
       setCameraOffset(newCam);
     } else if (isDrawing.current) {
       if (!canvasRef.current) return;
-      const position = compouteCords(e) || { x: 0, y: 0 };
+      const position = computeCoords(e) || { x: 0, y: 0 };
       if (lastPosition.current) {
         updateCellColor(position.x - cameraOffset.x, position.y - cameraOffset.y, 'black');  
         lastPosition.current = position;
@@ -104,20 +144,15 @@ export default function useCanvas(gridRows: number, gridCols: number, cellSize: 
   const drawCanvas = (ctx: CanvasRenderingContext2D) => {
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
     ctx.save();
-
-     
     ctx.translate(cameraOffset.x, cameraOffset.y);
-
-     
     grid.forEach(row => {
       row.forEach(cell => {
         ctx.fillStyle = cell.color;
         ctx.fillRect(cell.x, cell.y, cellSize, cellSize);
-        ctx.strokeStyle = 'black';  
+        ctx.strokeStyle = 'black';
         ctx.strokeRect(cell.x, cell.y, cellSize, cellSize);
       });
     });
-
     ctx.restore();
   };
 

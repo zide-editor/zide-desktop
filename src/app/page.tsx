@@ -1,9 +1,10 @@
 "use client";
-
 import useCanvas from "@/hooks/useCanvas";
+import { useState } from 'react'
 
 export default function Home() {
-  const { canvasRef } = useCanvas(8, 8, 50);
+  const [isFloodFill, setIsFloodFill] = useState(false)
+  const { canvasRef } = useCanvas(8, 8, 50, isFloodFill);
 
   return (
     <main className="h-screen w-full bg-[#F3EEE3] relative flex items-center justify-center">
@@ -19,6 +20,7 @@ export default function Home() {
         width={window.innerWidth}
         className="bg-black"
       ></canvas>
+      <button className="text-white absolute bottom-0 right-0" onClick={() => setIsFloodFill(!isFloodFill)}>{isFloodFill ? 'FILL MODE' : 'DRAW MODE'}</button>
 
       <section className="h-24 w-1/3 bg-[#D9D0BE] absolute bottom-0 left-0 right-0 mx-auto z-[999]"></section>
     </main>
