@@ -43,7 +43,7 @@ export default function Home() {
     isFloodFill,
     currentColor,
     setCurrentColor,
-    setPredefinedColor
+    setPredefinedColor,
   } = useCanvas(8, 8, 50);
   const { windowDim } = useWindow();
 
@@ -83,26 +83,28 @@ export default function Home() {
         </div>
       </div>
 
-      <section className="h-24 w-1/3 bg-[#D9D0BE] absolute bottom-0 left-0 right-0 mx-auto z-[999] flex justify-around">
+      <section className="w-24 h-1/3 bg-[#D9D0BE] absolute bottom-0 top-0 left-0 my-auto z-[999] flex flex-col justify-around">
         <section
           onClick={() => setSelectedTool("pencil")}
-          className={`w-20 h-full bg-red-300 ${selectedTool === "pencil" && "-translate-y-3"}`}
+          className={`h-20 w-full bg-red-300 ${selectedTool === "pencil" && "translate-x-3"}`}
         >
           PENCIL
         </section>
         <section
           onClick={() => setSelectedTool("eraser")}
-          className={`w-20 h-full bg-red-300 ${selectedTool === "eraser" && "-translate-y-3"}`}
+          className={`h-20 w-full bg-red-300 ${selectedTool === "eraser" && "translate-x-3"}`}
         >
           ERASER
         </section>
         <section
           onClick={() => setSelectedTool("bucket")}
-          className={`w-20 h-full bg-red-300 ${selectedTool === "bucket" && "-translate-y-3"}`}
+          className={`h-20 w-full bg-red-300 ${selectedTool === "bucket" && "translate-x-3"}`}
         >
           BUCKET
         </section>
       </section>
+
+      <section className="w-3/4 h-32 bg-[#D9D0BE] absolute bottom-0"></section>
     </main>
   );
 }
