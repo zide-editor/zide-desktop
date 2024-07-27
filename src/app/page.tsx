@@ -7,30 +7,35 @@ import { HexColorPicker } from "react-colorful";
 
 const primaryColors = [
   {
-    "name": "cyan",
-    "code": "#00FFFF"
-  }, {
-    "name": "red",
-    "code": "#FF0000"
-  }, {
-    "name": "green",
-    "code": "#00FF00"
-  }, {
-    "name": "blue",
-    "code": "#0000FF"
+    name: "cyan",
+    code: "#00FFFF",
   },
   {
-    "name": "yellow",
-    "code": "#FFFF00"
-  }, {
-    "name": "magenta",
-    "code": "#FF00FF"
-  }
+    name: "red",
+    code: "#FF0000",
+  },
+  {
+    name: "green",
+    code: "#00FF00",
+  },
+  {
+    name: "blue",
+    code: "#0000FF",
+  },
+  {
+    name: "yellow",
+    code: "#FFFF00",
+  },
+  {
+    name: "magenta",
+    code: "#FF00FF",
+  },
 ];
 
 export default function Home() {
   const [isFloodFill, setIsFloodFill] = useState(false);
-  const { canvasRef, currentColor, setCurrentColor, setPredefinedColor } = useCanvas(8, 8, 50, isFloodFill);
+  const { canvasRef, currentColor, setCurrentColor, setPredefinedColor } =
+    useCanvas(8, 8, 50, isFloodFill);
   const windowDim = useRef<Point>();
 
   if (typeof window !== "undefined") {
@@ -58,15 +63,15 @@ export default function Home() {
         {isFloodFill ? "FILL MODE" : "DRAW MODE"}
       </button>
 
-      <section className="absolute right-10 bottom-10 flex flex-col space-y-2">
-        <button className="h-6 w-6 bg-black text-white rounded-full">U</button>
-        <button className="h-6 w-6 bg-black text-white rounded-full">R</button>
-      </section>
-      <div className="absolute top-16 right-4 p-2 bg-white rounded-lg shadow-md"  >
+      <div className="absolute top-16 right-4 p-2 bg-white rounded-lg shadow-md">
         <HexColorPicker color={currentColor} onChange={setCurrentColor} />
         <div className="flex flex-col mt-2 justify-center">
           {primaryColors.map((color, idx) => (
-            <div key={idx}  onClick={() => setPredefinedColor(color.code)} className={`flex gap-1 items-center rounded-md py-1 ${color.code === currentColor ? "bg-black/5 " : ""}`} >
+            <div
+              key={idx}
+              onClick={() => setPredefinedColor(color.code)}
+              className={`flex gap-1 items-center rounded-md py-1 ${color.code === currentColor ? "bg-black/5 " : ""}`}
+            >
               <button
                 className={`w-6 h-6 m-1 rounded-md cursor-pointer`}
                 style={{ backgroundColor: color.code }}
@@ -77,7 +82,8 @@ export default function Home() {
         </div>
       </div>
 
-      <section className="h-24 w-1/3 bg-[#D9D0BE] absolute bottom-0 left-0 right-0 mx-auto z-[999]"></section>
+      <section className="w-24 h-1/3 bg-[#D9D0BE] absolute top-0 bottom-0 left-0 my-auto z-[999]"></section>
+      <section className="h-24 w-8/12 bg-[#D9D0BE] absolute bottom-0 left-0 right-0 mx-auto"></section>
     </main>
   );
 }
