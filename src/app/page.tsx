@@ -7,10 +7,10 @@ import { useRef, useState } from "react";
 export default function Home() {
   const [isFloodFill, setIsFloodFill] = useState(false);
   const { canvasRef } = useCanvas(8, 8, 50, isFloodFill);
-  const windowDim = useRef<Point>()
+  const windowDim = useRef<Point>();
 
   if (typeof window !== "undefined") {
-    windowDim.current = {x: window.innerWidth, y: window.innerHeight}
+    windowDim.current = { x: window.innerWidth, y: window.innerHeight };
   }
 
   return (
@@ -21,13 +21,23 @@ export default function Home() {
         <h1 className="cursor-pointer hover:text-[#B7A7F0]">HELP</h1>
       </nav>
 
-      <canvas ref={canvasRef} height={windowDim.current?.x || 0} width={windowDim.current?.y || 0}></canvas>
+      <canvas
+        ref={canvasRef}
+        height={windowDim.current?.x || 0}
+        width={windowDim.current?.y || 0}
+      ></canvas>
+
       <button
         className="text-white absolute bottom-0 right-0"
         onClick={() => setIsFloodFill(!isFloodFill)}
       >
         {isFloodFill ? "FILL MODE" : "DRAW MODE"}
       </button>
+
+      <section className="absolute right-10 bottom-10 flex flex-col space-y-2">
+        <button className="h-6 w-6 bg-black text-white rounded-full">U</button>
+        <button className="h-6 w-6 bg-black text-white rounded-full">R</button>
+      </section>
 
       <section className="h-24 w-1/3 bg-[#D9D0BE] absolute bottom-0 left-0 right-0 mx-auto z-[999]"></section>
     </main>
