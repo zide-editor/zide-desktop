@@ -6,6 +6,7 @@ type GridCell = {
   x: number;
   y: number;
   color: string;
+  originalColor: string;
 };
 
 export default function useCanvas(gridRows: number, gridCols: number, cellSize: number, isFloodFill: boolean) {
@@ -19,12 +20,14 @@ export default function useCanvas(gridRows: number, gridCols: number, cellSize: 
 
   const [cameraOffset, setCameraOffset] = useState<Point>({ x: 0, y: 0 });
   const [cameraZoom, setCameraZoom] = useState<number>(1);
+  const [hoveredCell, setHoveredCell] = useState<{ row: number, col: number } | null>(null);
   const [grid, setGrid] = useState<GridCell[][]>(() => {
     const initialGrid = Array.from({ length: gridRows }, (_, row) =>
       Array.from({ length: gridCols }, (_, col) => ({
         x: col * cellSize,
         y: row * cellSize,
         color: 'white',
+        originalColor: 'white',
       }))
     );
     return initialGrid;
@@ -45,7 +48,7 @@ export default function useCanvas(gridRows: number, gridCols: number, cellSize: 
       const newGrid = grid.map((r, rowIndex) =>
         r.map((cell, colIndex) =>
           rowIndex === row && colIndex === col
-            ? { ...cell, color }
+            ? { ...cell, color, originalColor: color }
             : cell
         )
       );
@@ -53,20 +56,19 @@ export default function useCanvas(gridRows: number, gridCols: number, cellSize: 
     }
   };
 
-  const floodFillUtil = (grid: Array<Array<GridCell>>, row:number, col:number, targetColor:string, replacementColor:string) => {
+  const floodFillUtil = (grid: Array<Array<GridCell>>, row: number, col: number, targetColor: string, replacementColor: string) => {
     if (targetColor === replacementColor) return;
 
     const fillStack = [[row, col]];
 
     while (fillStack.length) {
-      const [currentRow, currentCol] = fillStack.pop() || [0,0];
+      const [currentRow, currentCol] = fillStack.pop() || [0, 0];
       if (
         currentRow >= 0 && currentRow < grid.length &&
         currentCol >= 0 && currentCol < grid[0].length &&
         grid[currentRow][currentCol].color === targetColor
       ) {
         grid[currentRow][currentCol].color = replacementColor;
-
         fillStack.push([currentRow + 1, currentCol]);
         fillStack.push([currentRow - 1, currentCol]);
         fillStack.push([currentRow, currentCol + 1]);
@@ -75,7 +77,7 @@ export default function useCanvas(gridRows: number, gridCols: number, cellSize: 
     }
   };
 
-  const handleFloodFill = (x:number, y:number, fillColor: string) => {
+  const handleFloodFill = (x: number, y: number, fillColor: string) => {
     const { col, row } = getCellCoords(x, y);
     if (grid[row] && grid[row][col]) {
       const targetColor = grid[row][col].color;
@@ -87,42 +89,45 @@ export default function useCanvas(gridRows: number, gridCols: number, cellSize: 
 
   const mouseDownHandler = (e: MouseEvent) => {
     const position = computeCoords(e) || { x: 0, y: 0 };
+    const adjustedX = (position.x - cameraOffset.x) / cameraZoom;
+    const adjustedY = (position.y - cameraOffset.y) / cameraZoom;
+
     if (isSpacebarHeld.current) {
       isDragging.current = true;
-      dragStartPoint.current = {
-        x: position.x - cameraOffset.x,
-        y: position.y - cameraOffset.y,
-      };
+      dragStartPoint.current = { x: adjustedX, y: adjustedY };
     } else if (e.button === 0) {
       isDrawing.current = true;
       lastPosition.current = position;
       if (isFloodFillRef.current) {
-        handleFloodFill(position.x - cameraOffset.x, position.y - cameraOffset.y, 'black');
+        handleFloodFill(adjustedX, adjustedY, 'black');
       } else {
-        updateCellColor(position.x - cameraOffset.x, position.y - cameraOffset.y, 'black');
+        updateCellColor(adjustedX, adjustedY, 'black');
       }
     }
-    dragStartPoint.current = {
-      x: position.x / cameraZoom - cameraOffset.x,
-      y: position.y / cameraZoom - cameraOffset.y,
-    };
   };
 
   const mouseMoveHandler = (e: MouseEvent) => {
+    const position = computeCoords(e) || { x: 0, y: 0 };
+    const adjustedX = (position.x - cameraOffset.x) / cameraZoom;
+    const adjustedY = (position.y - cameraOffset.y) / cameraZoom;
+
     if (isDragging.current) {
-      if (!canvasRef.current) return;
-      const position = computeCoords(e) || { x: 0, y: 0 };
       const newCam = {
-        x: position.x / cameraZoom - dragStartPoint.current.x,
-        y: position.y / cameraZoom - dragStartPoint.current.y,
+        x: position.x - dragStartPoint.current.x * cameraZoom,
+        y: position.y - dragStartPoint.current.y * cameraZoom,
       };
       setCameraOffset(newCam);
     } else if (isDrawing.current) {
-      if (!canvasRef.current) return;
-      const position = computeCoords(e) || { x: 0, y: 0 };
       if (lastPosition.current) {
-        updateCellColor(position.x - cameraOffset.x, position.y - cameraOffset.y, 'black');  
+        updateCellColor(adjustedX, adjustedY, 'black');
         lastPosition.current = position;
+      }
+    } else {
+      const { col, row } = getCellCoords(adjustedX, adjustedY);
+      if (grid[row] && grid[row][col]) {
+        setHoveredCell({ row, col });
+      } else {
+        setHoveredCell(null);
       }
     }
   };
@@ -142,7 +147,7 @@ export default function useCanvas(gridRows: number, gridCols: number, cellSize: 
   const keyUpHandler = (e: KeyboardEvent) => {
     if (e.code === 'Space') {
       isSpacebarHeld.current = false;
-      isDragging.current = false;  
+      isDragging.current = false;
     }
   };
 
@@ -156,6 +161,15 @@ export default function useCanvas(gridRows: number, gridCols: number, cellSize: 
     const maxZoom = 3;
     const clampedZoom = Math.min(maxZoom, Math.max(minZoom, newZoom));
 
+    const position = computeCoords(e) || { x: 0, y: 0 };
+    const mouseWorldX = (position.x - cameraOffset.x) / cameraZoom;
+    const mouseWorldY = (position.y - cameraOffset.y) / cameraZoom;
+
+    setCameraOffset({
+      x: position.x - mouseWorldX * clampedZoom,
+      y: position.y - mouseWorldY * clampedZoom,
+    });
+
     setCameraZoom(clampedZoom);
   };
 
@@ -166,9 +180,9 @@ export default function useCanvas(gridRows: number, gridCols: number, cellSize: 
     ctx.translate(cameraOffset.x, cameraOffset.y);
     ctx.scale(cameraZoom, cameraZoom);
 
-    grid.forEach(row => {
-      row.forEach(cell => {
-        ctx.fillStyle = cell.color;
+    grid.forEach((row, rowIndex) => {
+      row.forEach((cell, colIndex) => {
+        ctx.fillStyle = (hoveredCell && hoveredCell.row === rowIndex && hoveredCell.col === colIndex) ? '#75726C' : cell.color;
         ctx.fillRect(cell.x, cell.y, cellSize, cellSize);
         ctx.strokeStyle = 'black';
         ctx.strokeRect(cell.x, cell.y, cellSize, cellSize);
@@ -214,8 +228,7 @@ export default function useCanvas(gridRows: number, gridCols: number, cellSize: 
       window.removeEventListener("keyup", keyUpHandler);
       canvasElement.removeEventListener("wheel", wheelHandler);
     };
-  }, [cameraOffset, cameraZoom, grid, cellSize]);
+  }, [cameraOffset, cameraZoom, grid, cellSize, hoveredCell]);
 
   return { canvasRef };
 }
-
