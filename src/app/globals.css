@@ -1,3 +1,8 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.graph {
+  background-image: radial-gradient(circle at 1px 1px, black 1px, transparent 0);
+  background-size: 40px 40px;
+}

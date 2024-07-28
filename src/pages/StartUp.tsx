@@ -1,7 +1,6 @@
 import { useState } from "react";
 import ConfigProject from "./ConfigProjectModal";
 import OpenProject from "./OpenProject";
-import { ArrowForward } from "@material-ui/icons";
 
 export default function StartUp({
   setStarted,
@@ -28,7 +27,6 @@ export default function StartUp({
           }}
         >
           <span className="mr-2 font-semibold">Create New Project</span>
-          <ArrowForward />
         </button>
         <button
           className="p-3 border-2 bg-white text-center border-black"
@@ -37,7 +35,6 @@ export default function StartUp({
           }}
         >
           <span className="mr-2 font-semibold">Open Project</span>
-          <ArrowForward />
         </button>
       </div>
     </main>
