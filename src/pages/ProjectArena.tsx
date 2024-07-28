@@ -6,9 +6,8 @@ import { primaryColors } from "@/utils/libs";
 import { useState } from "react";
 import { useColor } from "@/hooks/useColor";
 
-import { EditOutlined } from "@material-ui/icons";
-
 export default function ProjectArena() {
+  const { currentColor, setPredefinedColor, setCurrentColor } = useColor();
   const {
     downloadCanvas,
     canvasRef,
@@ -20,11 +19,9 @@ export default function ProjectArena() {
     handleSelectGrid,
     togglePlay,
     isPlaying,
-  } = useCanvas(8, 8, 50);
+  } = useCanvas(8, 8, currentColor, 50);
   const [selectedMenu, setSelectedMenu] = useState<TypeSelectableMenu>("none");
   const { windowDim } = useWindow();
-
-  const { currentColor, setPredefinedColor, setCurrentColor } = useColor();
 
   return (
     <main className="h-screen w-full bg-[#F3EEE3] relative flex items-center justify-center">
@@ -58,24 +55,30 @@ export default function ProjectArena() {
           onClick={() => setSelectedTool("pencil")}
           className={`h-20 flex items-center justify-center w-full bg-red-300 ${selectedTool === "pencil" && "translate-x-3"}`}
         >
-        Pencil
+          Pencil
         </section>
 
         <section
           onClick={() => setSelectedTool("eraser")}
           className={`h-20 flex items-center justify-center w-full bg-red-300 ${selectedTool === "eraser" && "translate-x-3"}`}
-        >Eraser</section>
+        >
+          Eraser
+        </section>
 
         <section
           onClick={() => setSelectedTool("bucket")}
           className={`h-20 w-full bg-red-300 flex items-center justify-center ${selectedTool === "bucket" && "translate-x-3"}`}
-        >Bucket</section>
+        >
+          Bucket
+        </section>
       </section>
 
       <div className="absolute bottom-0 left-0 m-4"></div>
 
       <section className="w-3/4 border border-black h-32 bg-[#D9D0BE] absolute bottom-0 flex">
-        <section className="h-full font-mono flex items-center justify-center bg-red-50 w-48">TIMELINE</section>
+        <section className="h-full font-mono flex items-center justify-center bg-red-50 w-48">
+          TIMELINE
+        </section>
 
         <section className="w-full py-10 px-1">
           {grids.map((_, index) => (
@@ -83,7 +86,9 @@ export default function ProjectArena() {
               key={index}
               className="h-5 w-5 bg-white border border-black"
               onClick={() => handleSelectGrid(index)}
-            >.</button>
+            >
+              .
+            </button>
           ))}
         </section>
 

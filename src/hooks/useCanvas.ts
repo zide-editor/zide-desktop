@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { computeCoords, getCellCoords } from "@/utils/libs";
 import { TypeSelectable, TypePoint, GridCell } from "@/utils/type";
-import { updateCellColor } from "@/utils/algorithm";
+import { handleFloodFill, updateCellColor } from "@/utils/algorithm";
 import { useColor } from "./useColor";
 import { useHistory } from "./useHistory";
 import { writeBinaryFile } from '@tauri-apps/api/fs'
@@ -10,6 +10,7 @@ import { save } from '@tauri-apps/api/dialog'
 export default function useCanvas(
   gridRows: number,
   gridCols: number,
+  currentColor: string,
   cellSize: number,
 ) {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -27,7 +28,6 @@ export default function useCanvas(
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [grid, setGrid] = useState<GridCell[][]>(grids[currentIndex]);
   const isSpacebarHeld = useRef<boolean>(false);
-  const { currentColor } = useColor();
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -91,11 +91,11 @@ export default function useCanvas(
       lastPosition.current = position;
       saveStateToUndoStack();
 
-      // if (isFloodFillRef.current) {
-      //   handleFloodFill(adjustedX, adjustedY, currentColor);
-      // } else {
-      //   updateCellColor(adjustedX, adjustedY, currentColor);
-      // }
+      if (selectedTool === 'bucket') {
+        handleFloodFill(adjustedX, adjustedY, currentColor, grid, setGrid, grids, setGrids, currentIndex);
+      } else {
+        updateCellColor(adjustedX, adjustedY, currentColor, grid, setGrid, grids, setGrids, currentIndex);
+      }
     }
   };
 
