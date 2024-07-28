@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { computeCoords, getCellCoords } from "@/utils/libs";
 import { TypeSelectable, TypePoint, GridCell } from "@/utils/type";
 import { handleFloodFill, updateCellColor } from "@/utils/algorithm";
-import { useColor } from "./useColor";
 import { useHistory } from "./useHistory";
 import { writeBinaryFile } from '@tauri-apps/api/fs'
 import { save } from '@tauri-apps/api/dialog'

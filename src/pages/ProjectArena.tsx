@@ -1,17 +1,16 @@
 import useCanvas from "@/hooks/useCanvas";
 import useWindow from "@/hooks/useWindow";
 import { TypeSelectableMenu } from "@/utils/type";
-import { HexColorPicker } from "react-colorful";
 import { primaryColors } from "@/utils/libs";
 import { useState } from "react";
 import { useColor } from "@/hooks/useColor";
 import Image from "next/image";
 import { Bucket, Eraser, Pencil } from "@/assets";
 import useCollapse from "@/hooks/useCollapse";
-import { IconCaretDown, IconCaretDownFilled, IconCaretUp, IconCaretUpFilled } from "@tabler/icons-react";
+import { IconCaretDownFilled, IconCaretUpFilled } from "@tabler/icons-react";
 
 export default function ProjectArena() {
-  const { currentColor, setPredefinedColor, setCurrentColor } = useColor();
+  const { currentColor, setCurrentColor } = useColor();
   const { isTimelineVisibility, setTimelineVisiblity } = useCollapse();
   const {
     downloadCanvas,
@@ -36,27 +35,22 @@ export default function ProjectArena() {
         setSelectedMenu={setSelectedMenu}
       />
 
-      {/*
-          <div className="absolute top-16 right-4 p-2 bg-white rounded-lg shadow-md">
-          <HexColorPicker color={currentColor} onChange={setCurrentColor} />
-
-          <div className="flex flex-col mt-2 justify-center">
+      <section className="absolute right-0 top-0 bottom-0 my-auto h-fit p-2 bg-[#D9D0BE] shadow-[5px_5px_0px_0px_rgba(153,142,119)]">
+        <div className="grid grid-cols-2 justify-center max-h-48 overflow-scroll">
           {primaryColors.map((color, idx) => (
-          <div
-          key={idx}
-          onClick={() => setPredefinedColor(color.code)}
-          className={`flex gap-1 items-center rounded-md py-1 ${color.code === currentColor ? "bg-black/5 " : ""}`}
-          >
-          <button
-          className="w-6 h-6 m-1 rounded-md cursor-pointer"
-          style={{ backgroundColor: color.code }}
-          />
-          <h3>{color.name}</h3>
-          </div>
+            <div
+              key={idx}
+              onClick={() => setCurrentColor(color)}
+              className={`flex gap-1 items-center rounded-md py-1 ${color === currentColor ? "bg-black/5 " : ""}`}
+            >
+              <button
+                className="w-6 h-6 m-1 rounded-md cursor-pointer"
+                style={{ backgroundColor: color }}
+              />
+            </div>
           ))}
-          </div>
-          </div>
-        */}
+        </div>
+      </section>
 
       <section className="shadow-[5px_5px_0px_0px_rgba(153,142,119)] -translate-x-2 w-10 h-fit bg-[#D9D0BE] absolute bottom-0 top-0 left-0 my-auto z-[999] flex flex-col justify-around">
         <section
@@ -90,7 +84,11 @@ export default function ProjectArena() {
           onClick={() => setTimelineVisiblity(!isTimelineVisibility)}
           className="absolute h-5 w-5 bg-[#D9D0BE] -top-5 right-10 flex  shadow-[5px_0px_0px_0px_rgba(153,142,119)] items-center justify-center border-black border-x border-t"
         >
-          {isTimelineVisibility ? <IconCaretDownFilled /> : <IconCaretUpFilled />}
+          {isTimelineVisibility ? (
+            <IconCaretDownFilled />
+          ) : (
+            <IconCaretUpFilled />
+          )}
         </button>
 
         <div className="flex-grow max-w-48 min-w-36">

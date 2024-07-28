@@ -8,12 +8,12 @@ export const MENU_DATA = {
 };
 
 export const primaryColors = [
-  { name: "cyan", code: "#00FFFF" },
-  { name: "red", code: "#FF0000" },
-  { name: "green", code: "#00FF00" },
-  { name: "blue", code: "#0000FF" },
-  { name: "yellow", code: "#FFFF00" },
-  { name: "magenta", code: "#FF00FF" },
+  "#00FFFF",
+  "#FF0000",
+  "#00FF00",
+  "#0000FF",
+  "#FFFF00",
+  "#FF00FF",
 ];
 
 export const getCellCoords = (x: number, y: number, cellSize: number) => ({
