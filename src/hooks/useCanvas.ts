@@ -1,148 +1,81 @@
 import { useEffect, useRef, useState } from "react";
-import { computeCoords } from "@/utils/libs";
-import { TypeSelectable, TypePoint } from "@/utils/type";
-
-type GridCell = {
-  x: number;
-  y: number;
-  color: string;
-  originalColor: string;
-};
+import { computeCoords, getCellCoords } from "@/utils/libs";
+import { TypeSelectable, TypePoint, GridCell } from "@/utils/type";
+import { updateCellColor } from "@/utils/algorithm";
+import { useColor } from "./useColor";
+import { useHistory } from "./useHistory";
+import { writeBinaryFile } from '@tauri-apps/api/fs'
+import { save } from '@tauri-apps/api/dialog'
 
 export default function useCanvas(
   gridRows: number,
   gridCols: number,
   cellSize: number,
-  grids: GridCell[][][],
-  handleGridChange,
-  currentIndex: number
 ) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [grids, setGrids] = useState<GridCell[][][]>([
+    Array.from({ length: 8 }, (_, row) =>
+      Array.from({ length: 8 }, (_, col) => ({
+        x: col * 50,
+        y: row * 50,
+        color: "#00000000",
+        originalColor: "#00000000",
+      })),
+    ),
+  ]);
+  const playIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  const [grid, setGrid] = useState<GridCell[][]>(grids[currentIndex]);
+  const isSpacebarHeld = useRef<boolean>(false);
+  const { currentColor } = useColor();
 
-  const [isFloodFill, setIsFloodFill] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const isDragging = useRef<boolean>(false);
   const isDrawing = useRef<boolean>(false);
-  const isSpacebarHeld = useRef<boolean>(false);
+
   const lastPosition = useRef<TypePoint | null>(null);
-  const dragStartPoint = useRef<TypePoint>({ x: 0, y: 0 });
-  const isFloodFillRef = useRef(isFloodFill);
-  const [currentColor, setCurrentColor] = useState<string>("#000000");
 
   const [selectedTool, setSelectedTool] = useState<TypeSelectable>("pencil");
 
   const [cameraOffset, setCameraOffset] = useState<TypePoint>({ x: 0, y: 0 });
   const [cameraZoom, setCameraZoom] = useState<number>(1);
+  const dragStartPoint = useRef<TypePoint>({ x: 0, y: 0 });
+
   const [hoveredCell, setHoveredCell] = useState<{
     row: number;
     col: number;
   } | null>(null);
-  
-  const [grid, setGrid] = useState<GridCell[][]>(grids[currentIndex]);
-
-  const setPredefinedColor = (color: string) => {
-    setCurrentColor(color);
-  };
-
-  const undoStack = useRef<GridCell[][][]>([]);
-  const redoStack = useRef<GridCell[][][]>([]);
-
-  useEffect(() => {
-    isFloodFillRef.current = isFloodFill;
-  }, [isFloodFill]);
 
   useEffect(() => {
     setGrid(grids[currentIndex]);
   }, [currentIndex, grids]);
 
-  const getCellCoords = (x: number, y: number) => ({
-    col: Math.floor(x / cellSize),
-    row: Math.floor(y / cellSize),
-  });
+  const { undo, redo, saveStateToUndoStack } = useHistory(
+    grid,
+    setGrid,
+    grids,
+    setGrids,
+    currentIndex,
+  );
 
-  const updateCellColor = (x: number, y: number, color: string) => {
-    const { col, row } = getCellCoords(x, y);
-    if (grid[row] && grid[row][col]) {
-      const newGrid = grid.map((r, rowIndex) =>
-        r.map((cell, colIndex) =>
-          rowIndex === row && colIndex === col
-            ? { ...cell, color, originalColor: color }
-            : cell,
-        ),
-      );
-      setGrid(newGrid);
-      handleGridChange(currentIndex, newGrid);
-    }
+  const handleAddGrid = () => {
+    setGrids([
+      ...grids,
+      Array.from({ length: gridRows }, (_, row) =>
+        Array.from({ length: gridCols }, (_, col) => ({
+          x: col * 50,
+          y: row * 50,
+          color: "#00000000",
+          originalColor: "#00000000",
+        })),
+      ),
+    ]);
+    setCurrentIndex(grids.length); // Switch to the newly added grid
   };
 
-  const floodFillUtil = (
-    grid: Array<Array<GridCell>>,
-    row: number,
-    col: number,
-    targetColor: string,
-    replacementColor: string,
-  ) => {
-    if (targetColor === replacementColor) return;
-
-    const fillStack = [[row, col]];
-
-    while (fillStack.length) {
-      const [currentRow, currentCol] = fillStack.pop() || [0, 0];
-      if (
-        currentRow >= 0 &&
-        currentRow < grid.length &&
-        currentCol >= 0 &&
-        currentCol < grid[0].length &&
-        grid[currentRow][currentCol].color === targetColor
-      ) {
-        grid[currentRow][currentCol].color = replacementColor;
-        fillStack.push([currentRow + 1, currentCol]);
-        fillStack.push([currentRow - 1, currentCol]);
-        fillStack.push([currentRow, currentCol + 1]);
-        fillStack.push([currentRow, currentCol - 1]);
-      }
-    }
-  };
-
-  const handleFloodFill = (x: number, y: number, fillColor: string) => {
-    const { col, row } = getCellCoords(x, y);
-    if (grid[row] && grid[row][col]) {
-      const targetColor = grid[row][col].color;
-      const newGrid = grid.map((row) => row.map((cell) => ({ ...cell })));
-      floodFillUtil(newGrid, row, col, targetColor, fillColor);
-      setGrid(newGrid);
-      handleGridChange(currentIndex, newGrid);
-    }
-  };
-
-  const saveStateToUndoStack = () => {
-    undoStack.current = [
-      ...undoStack.current,
-      grid.map((row) => row.map((cell) => ({ ...cell }))),
-    ];
-    redoStack.current = [];
-  };
-
-  const undo = () => {
-    if (undoStack.current.length > 0) {
-      const previousState = undoStack.current.pop();
-      if (previousState) {
-        redoStack.current = [...redoStack.current, grid];
-        setGrid(previousState);
-        handleGridChange(currentIndex, previousState);
-      }
-    }
-  };
-
-  const redo = () => {
-    if (redoStack.current.length > 0) {
-      const nextState = redoStack.current.pop();
-      if (nextState) {
-        undoStack.current = [...undoStack.current, grid];
-        setGrid(nextState);
-        handleGridChange(currentIndex, nextState);
-      }
-    }
+  const handleSelectGrid = (index: number) => {
+    setCurrentIndex(index);
   };
 
   const mouseDownHandler = (e: MouseEvent) => {
@@ -157,11 +90,12 @@ export default function useCanvas(
       isDrawing.current = true;
       lastPosition.current = position;
       saveStateToUndoStack();
-      if (isFloodFillRef.current) {
-        handleFloodFill(adjustedX, adjustedY, currentColor);
-      } else {
-        updateCellColor(adjustedX, adjustedY, currentColor);
-      }
+
+      // if (isFloodFillRef.current) {
+      //   handleFloodFill(adjustedX, adjustedY, currentColor);
+      // } else {
+      //   updateCellColor(adjustedX, adjustedY, currentColor);
+      // }
     }
   };
 
@@ -178,11 +112,20 @@ export default function useCanvas(
       setCameraOffset(newCam);
     } else if (isDrawing.current) {
       if (lastPosition.current) {
-        updateCellColor(adjustedX, adjustedY, currentColor);
+        updateCellColor(
+          adjustedX,
+          adjustedY,
+          currentColor,
+          grid,
+          setGrid,
+          grids,
+          setGrids,
+          currentIndex,
+        );
         lastPosition.current = position;
       }
     } else {
-      const { col, row } = getCellCoords(adjustedX, adjustedY);
+      const { col, row } = getCellCoords(adjustedX, adjustedY, cellSize);
       if (grid[row] && grid[row][col]) {
         setHoveredCell({ row, col });
       } else {
@@ -195,25 +138,6 @@ export default function useCanvas(
     isDragging.current = false;
     isDrawing.current = false;
     lastPosition.current = null;
-  };
-
-  const keyDownHandler = (e: KeyboardEvent) => {
-    if (e.code === "Space") {
-      isSpacebarHeld.current = true;
-    }
-    if (e.ctrlKey && e.code === "KeyZ") {
-      undo();
-    }
-    if (e.ctrlKey && e.code === "KeyY") {
-      redo();
-    }
-  };
-
-  const keyUpHandler = (e: KeyboardEvent) => {
-    if (e.code === "Space") {
-      isSpacebarHeld.current = false;
-      isDragging.current = false;
-    }
   };
 
   const wheelHandler = (e: WheelEvent) => {
@@ -238,6 +162,16 @@ export default function useCanvas(
     setCameraZoom(clampedZoom);
   };
 
+  // const drawCanvas = (ctx: CanvasRenderingContext2D) => {
+  //   ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+  //   ctx.save();
+  //
+  //   ctx.translate(cameraOffset.x, cameraOffset.y);
+  //   ctx.scale(cameraZoom, cameraZoom);
+  //
+  //   ctx.restore();
+  // };
+
   const drawCanvas = (ctx: CanvasRenderingContext2D) => {
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
     ctx.save();
@@ -249,8 +183,8 @@ export default function useCanvas(
       row.forEach((cell, colIndex) => {
         ctx.fillStyle =
           hoveredCell &&
-            hoveredCell.row === rowIndex &&
-            hoveredCell.col === colIndex
+          hoveredCell.row === rowIndex &&
+          hoveredCell.col === colIndex
             ? "#75726C"
             : cell.color;
         ctx.fillRect(cell.x, cell.y, cellSize, cellSize);
@@ -259,6 +193,91 @@ export default function useCanvas(
       });
     });
     ctx.restore();
+  };
+
+  const keyDownHandler = (e: KeyboardEvent) => {
+    if (e.code === "Space") {
+      isSpacebarHeld.current = true;
+    }
+    if (e.ctrlKey && e.code === "KeyZ") {
+      undo();
+    }
+    if (e.ctrlKey && e.code === "KeyY") {
+      redo();
+    }
+  };
+
+  const keyUpHandler = (e: KeyboardEvent) => {
+    if (e.code === "Space") {
+      isSpacebarHeld.current = false;
+      isDragging.current = false;
+    }
+  };
+
+  const downloadCanvas = async () => {
+    if (canvasRef.current) {
+      const tempCanvas = document.createElement("canvas");
+      tempCanvas.width = gridCols * cellSize * grids.length;
+      tempCanvas.height = gridRows * cellSize;
+      const tempCtx = tempCanvas.getContext("2d");
+      if (tempCtx) {
+        grids.forEach((grid, gridIndex) => {
+          grid.forEach((row, rowIndex) => {
+            row.forEach((cell, colIndex) => {
+              tempCtx.fillStyle = cell.color;
+              tempCtx.fillRect(
+                (gridIndex * gridCols + colIndex) * cellSize,
+                rowIndex * cellSize,
+                cellSize,
+                cellSize,
+              );
+            });
+          });
+        });
+        const dataURL = tempCanvas.toDataURL("image/png");
+
+        if (dataURL) {
+          const base64Data = dataURL.replace(/^data:image\/png;base64,/, "");
+          const binaryData = atob(base64Data);
+          const uint8Array = new Uint8Array(binaryData.length);
+          for (let i = 0; i < binaryData.length; i++) {
+            uint8Array[i] = binaryData.charCodeAt(i);
+          }
+
+          try {
+            const filePath = await save({
+              filters: [
+                {
+                  name: "Image",
+                  extensions: ["png"],
+                },
+              ],
+            });
+
+            if (filePath) {
+              await writeBinaryFile(filePath, uint8Array);
+              console.log("File saved successfully");
+            }
+          } catch (err) {
+            console.error("Failed to save the file:", err);
+          }
+        }
+      }
+    }
+  };
+
+  const togglePlay = () => {
+    if (isPlaying) {
+      if (playIntervalRef.current) {
+        clearInterval(playIntervalRef.current);
+      }
+      setIsPlaying(false);
+    } else {
+      setIsPlaying(true);
+      playIntervalRef.current = setInterval(() => {
+        setCurrentIndex((prevIndex) => (prevIndex + 1) % grids.length);
+      }, 400);
+    }
   };
 
   useEffect(() => {
@@ -301,13 +320,15 @@ export default function useCanvas(
   }, [cameraOffset, cameraZoom, grid, cellSize, hoveredCell]);
 
   return {
-    isFloodFill,
-    setIsFloodFill,
+    downloadCanvas,
     selectedTool,
     setSelectedTool,
     canvasRef,
-    currentColor,
-    setCurrentColor,
-    setPredefinedColor,
+    grids,
+    currentIndex,
+    handleAddGrid,
+    handleSelectGrid,
+    togglePlay,
+    isPlaying,
   };
 }
