@@ -60,10 +60,13 @@ export default function ProjectArena() {
         className={`absolute right-0 top-0 bottom-0 transition-transform ease-in-out my-auto p-4 bg-[#D9D0BE] shadow-[5px_5px_0px_0px_rgba(153,142,119)] max-h-48 min-w-48 max-w-48 flex flex-col ${isColorSwatchVisibility ? "translate-x-0" : "translate-x-48"} `}
       >
         <button
-          onClick={() => setColorSwatchVisiblity(!isColorSwatchVisibility)}
+          onClick={() => {
+            setColorSwatchVisiblity(!isColorSwatchVisibility);
+            setShowColorPicker(false);
+          }}
           className="absolute h-5 w-5 bg-[#D9D0BE]  top-10 -left-5 flex  shadow-[0px_5px_0px_0px_rgba(153,142,119)] items-center justify-center border-black border-y border-l"
         >
-          {isTimelineVisibility ? (
+          {isColorSwatchVisibility ? (
             <IconCaretRightFilled />
           ) : (
             <IconCaretLeftFilled />
