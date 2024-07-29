@@ -1,14 +1,19 @@
 import useCanvas from "@/hooks/useCanvas";
 import useWindow from "@/hooks/useWindow";
 import { TypeSelectableMenu } from "@/utils/type";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useColor } from "@/hooks/useColor";
 import Image from "next/image";
 import { Bucket, Eraser, Pencil } from "@/assets";
 import useCollapse from "@/hooks/useCollapse";
-import { IconCaretDownFilled, IconCaretUpFilled } from "@tabler/icons-react";
+import {
+  IconCaretDownFilled,
+  IconCaretUpFilled,
+  IconPlus,
+  IconUpload,
+} from "@tabler/icons-react";
 import { parseGimpPalette } from "@/utils/parse";
-import { ChromePicker, ColorResult } from 'react-color';
+import { ChromePicker, ColorResult } from "react-color";
 
 export default function ProjectArena() {
   const { colors, setColors, currentColor, setCurrentColor } = useColor();
@@ -32,60 +37,95 @@ export default function ProjectArena() {
   const handleColorChange = (color: ColorResult) => {
     setColors((state) => {
       return state.map((c: string) => {
-        if(currentColor === c) return color.hex;
+        if (currentColor === c) return color.hex;
         return c;
-      })
+      });
     });
     setCurrentColor(color.hex);
   };
 
-  
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e: ProgressEvent<FileReader>) => {
+      const content = e.target?.result;
+      if (typeof content === "string") {
+        const parsedHexCodes = parseGimpPalette(content).slice(1);
+        setColors((state) => {
+          return [...parsedHexCodes, ...state];
+        });
+      }
+    };
+    reader.readAsText(file);
+  };
+
   return (
-    <main className="h-screen graph w-full bg-[#F3EEE3] relative flex items-center justify-center">
+    <main className="h-screen graph w-full bg-[#F3EEE3] relative flex items-center justify-center overflow-clip">
       <Navbar
         downloadCanvas={downloadCanvas}
         selectedMenu={selectedMenu}
         setSelectedMenu={setSelectedMenu}
-        setColors={setColors}
       />
 
-      <section className="absolute right-0 top-0 bottom-0 my-auto h-fit p-2 bg-[#D9D0BE] shadow-[5px_5px_0px_0px_rgba(153,142,119)]">
-        <div className="grid grid-cols-2 justify-center max-h-48 overflow-scroll">
+      <section className="absolute right-0 top-0 bottom-0 my-auto p-4 bg-[#D9D0BE] shadow-[5px_5px_0px_0px_rgba(153,142,119)] max-h-48 min-w-48 flex flex-col">
+        <section className="grid grid-cols-4 flex-grow bg-[#D9D0BE] p-2 place-items-stretch color_row gap3 border border-black overflow-y-auto overflow-x-clip">
           {colors.map((color, idx) => (
             <div
-              key={idx}
-              onClick={() => setCurrentColor(color)}
-              className={`flex gap-1 items-center rounded-md py-1 ${color === currentColor ? "bg-black/5 " : ""}`}
+              className={`flex justify-center w-10 h-10 gap-1 items-center rounded-md py-1 ${color === currentColor ? "bg-black/5 " : ""}`}
             >
               <button
-                className="w-6 h-6 m-1 rounded-md cursor-pointer"
+                key={idx}
+                onClick={() => setCurrentColor(color)}
+                className="w-7 h-7  cursor-pointer rounded-md shadow "
                 style={{ backgroundColor: color }}
               />
             </div>
           ))}
+
+          <div
+            className={`flex justify-center w-10 h-10 gap-1 items-center rounded-md py-1 `}
+          >
+            <button className="w-7 h-7  cursor-pointer rounded-md shadow inline-flex items-center justify-center bg-gray-400">
+              <IconPlus color="white" size={18} />
+            </button>
+          </div>
+        </section>
+        <section className="min-h-10 w-full border-black border-x border-b px-2 flex">
           <div
             onClick={() => setShowColorPicker(!showColorPicker)}
             className={`flex gap-1 items-center rounded-md py-1 ${showColorPicker ? "bg-black/5 " : ""}`}
           >
-            <button
-              className="w-6 h-6 m-1 rounded-md cursor-pointer"
-              style={{
-                background: 'linear-gradient(to right, red, orange, yellow, green, blue, indigo, violet)',
-              }}
-            />
+            <button className="w-6 h-6 m-1 rounded-full cursor-pointer bg-gradient-to-r from-teal-400 to-yellow-200" />
           </div>
-        </div>
-        {showColorPicker && (
-          <div
-            className="absolute z-10 right-0 top-full p-2 bg-[#D9D0BE] rounded-l shadow-lg "
-          >
-            <ChromePicker
-              color={currentColor}
-              onChange={handleColorChange}
-              disableAlpha={true}
+
+          <div className={`flex gap-1 items-center rounded-md py-1`}>
+            <input
+              id="file-upload"
+              className="hidden"
+              type="file"
+              accept=".gpl"
+              onChange={handleFileUpload}
             />
+            <label
+              htmlFor="file-upload"
+              className="w-6 h-6 m-1 border border-[#998E78] rounded-full cursor-pointer p-1 inline-flex items-center justify-center shadow-[1px_1px_0px_0px_rgba(153,142,119)]"
+            >
+              <IconUpload size={15} />
+            </label>
           </div>
-        )}
+
+          {showColorPicker && (
+            <div className="absolute z-10 right-0 top-full p-2 bg-[#D9D0BE] rounded-l shadow-lg  ">
+              <ChromePicker
+                color={currentColor}
+                onChange={handleColorChange}
+                disableAlpha={true}
+              />
+            </div>
+          )}
+        </section>
       </section>
 
       <section className="shadow-[5px_5px_0px_0px_rgba(153,142,119)] -translate-x-2 w-10 h-fit bg-[#D9D0BE] absolute bottom-0 top-0 left-0 my-auto z-[999] flex flex-col justify-around">
@@ -188,33 +228,11 @@ const Navbar = ({
   selectedMenu,
   setSelectedMenu,
   downloadCanvas,
-  setColors
 }: {
   downloadCanvas: () => Promise<void>;
   selectedMenu: TypeSelectableMenu;
   setSelectedMenu: React.Dispatch<React.SetStateAction<TypeSelectableMenu>>;
-  setColors: React.Dispatch<React.SetStateAction<string[]>>
 }) => {
-
-
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e: ProgressEvent<FileReader>) => {
-      const content = e.target?.result;
-      if (typeof content === 'string') {
-        const parsedHexCodes = parseGimpPalette(content).slice(1,);
-        setColors((state) => {
-          return [...parsedHexCodes, ...state]
-        });
-      }
-    };
-    reader.readAsText(file);
-  };
-
-
   return (
     <nav className="shadow-[0px_5px_0px_0px_rgba(153,142,119)] p-5 w-full h-14 bg-[#D9D0BE] font-bold font-mono absolute top-0 flex space-x-5 items-center z-[999] select-none">
       <section className="relative">
@@ -241,7 +259,6 @@ const Navbar = ({
           <h1 className="text-black hover:text-[#8D75F1] cursor-pointer">
             Exit
           </h1>
-          <input type="file" accept=".gpl" onChange={handleFileUpload} />
         </div>
       </section>
 

@@ -6,3 +6,21 @@
   background-image: radial-gradient(circle at 1px 1px, black 1px, transparent 0);
   background-size: 40px 40px;
 }
+
+.color_row {
+  grid-auto-rows: 40px; 
+}
+
+::-webkit-scrollbar {
+  width: 5px;
+  background-color: transparent;
+}
+
+::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #797979;
+  border-radius: 5px;
+}
