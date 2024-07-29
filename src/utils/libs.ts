@@ -7,7 +7,7 @@ export const MENU_DATA = {
   edit: ["Undo", "Redo"],
 };
 
-export const primaryColors = [
+export const primaryColors : string[] = [
   "#00FFFF",
   "#FF0000",
   "#00FF00",

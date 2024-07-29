@@ -1,16 +1,17 @@
 import useCanvas from "@/hooks/useCanvas";
 import useWindow from "@/hooks/useWindow";
 import { TypeSelectableMenu } from "@/utils/type";
-import { primaryColors } from "@/utils/libs";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useColor } from "@/hooks/useColor";
 import Image from "next/image";
 import { Bucket, Eraser, Pencil } from "@/assets";
 import useCollapse from "@/hooks/useCollapse";
 import { IconCaretDownFilled, IconCaretUpFilled } from "@tabler/icons-react";
+import { parseGimpPalette } from "@/utils/parse";
+import { ChromePicker, ColorResult } from 'react-color';
 
 export default function ProjectArena() {
-  const { currentColor, setCurrentColor } = useColor();
+  const { colors, setColors, currentColor, setCurrentColor } = useColor();
   const { isTimelineVisibility, setTimelineVisiblity } = useCollapse();
   const {
     downloadCanvas,
@@ -26,18 +27,31 @@ export default function ProjectArena() {
   } = useCanvas(8, 8, currentColor, 50);
   const [selectedMenu, setSelectedMenu] = useState<TypeSelectableMenu>("none");
   const { windowDim } = useWindow();
+  const [showColorPicker, setShowColorPicker] = useState<boolean>(false);
 
+  const handleColorChange = (color: ColorResult) => {
+    setColors((state) => {
+      return state.map((c: string) => {
+        if(currentColor === c) return color.hex;
+        return c;
+      })
+    });
+    setCurrentColor(color.hex);
+  };
+
+  
   return (
     <main className="h-screen graph w-full bg-[#F3EEE3] relative flex items-center justify-center">
       <Navbar
         downloadCanvas={downloadCanvas}
         selectedMenu={selectedMenu}
         setSelectedMenu={setSelectedMenu}
+        setColors={setColors}
       />
 
       <section className="absolute right-0 top-0 bottom-0 my-auto h-fit p-2 bg-[#D9D0BE] shadow-[5px_5px_0px_0px_rgba(153,142,119)]">
         <div className="grid grid-cols-2 justify-center max-h-48 overflow-scroll">
-          {primaryColors.map((color, idx) => (
+          {colors.map((color, idx) => (
             <div
               key={idx}
               onClick={() => setCurrentColor(color)}
@@ -49,7 +63,29 @@ export default function ProjectArena() {
               />
             </div>
           ))}
+          <div
+            onClick={() => setShowColorPicker(!showColorPicker)}
+            className={`flex gap-1 items-center rounded-md py-1 ${showColorPicker ? "bg-black/5 " : ""}`}
+          >
+            <button
+              className="w-6 h-6 m-1 rounded-md cursor-pointer"
+              style={{
+                background: 'linear-gradient(to right, red, orange, yellow, green, blue, indigo, violet)',
+              }}
+            />
+          </div>
         </div>
+        {showColorPicker && (
+          <div
+            className="absolute z-10 right-0 top-full p-2 bg-[#D9D0BE] rounded-l shadow-lg "
+          >
+            <ChromePicker
+              color={currentColor}
+              onChange={handleColorChange}
+              disableAlpha={true}
+            />
+          </div>
+        )}
       </section>
 
       <section className="shadow-[5px_5px_0px_0px_rgba(153,142,119)] -translate-x-2 w-10 h-fit bg-[#D9D0BE] absolute bottom-0 top-0 left-0 my-auto z-[999] flex flex-col justify-around">
@@ -152,11 +188,33 @@ const Navbar = ({
   selectedMenu,
   setSelectedMenu,
   downloadCanvas,
+  setColors
 }: {
   downloadCanvas: () => Promise<void>;
   selectedMenu: TypeSelectableMenu;
   setSelectedMenu: React.Dispatch<React.SetStateAction<TypeSelectableMenu>>;
+  setColors: React.Dispatch<React.SetStateAction<string[]>>
 }) => {
+
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e: ProgressEvent<FileReader>) => {
+      const content = e.target?.result;
+      if (typeof content === 'string') {
+        const parsedHexCodes = parseGimpPalette(content).slice(1,);
+        setColors((state) => {
+          return [...parsedHexCodes, ...state]
+        });
+      }
+    };
+    reader.readAsText(file);
+  };
+
+
   return (
     <nav className="shadow-[0px_5px_0px_0px_rgba(153,142,119)] p-5 w-full h-14 bg-[#D9D0BE] font-bold font-mono absolute top-0 flex space-x-5 items-center z-[999] select-none">
       <section className="relative">
@@ -183,6 +241,7 @@ const Navbar = ({
           <h1 className="text-black hover:text-[#8D75F1] cursor-pointer">
             Exit
           </h1>
+          <input type="file" accept=".gpl" onChange={handleFileUpload} />
         </div>
       </section>
 
