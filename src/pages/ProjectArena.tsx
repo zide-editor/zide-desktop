@@ -26,7 +26,6 @@ export default function ProjectArena() {
     handleFileUpload,
     setShowColorPicker,
     showColorPicker,
-    previousColor,
   } = useColor();
   const {
     downloadCanvas,
@@ -39,7 +38,7 @@ export default function ProjectArena() {
     handleSelectGrid,
     togglePlay,
     isPlaying,
-  } = useCanvas(8, 8, currentColor, 50);
+  } = useCanvas(64, 64, currentColor);
   const [selectedMenu, setSelectedMenu] = useState<TypeSelectableMenu>("none");
   const {
     isTimelineVisibility,
@@ -77,10 +76,10 @@ export default function ProjectArena() {
         <section className="grid grid-cols-4 flex-grow bg-[#D9D0BE] p-2 place-items-stretch color_row gap3 border border-black overflow-y-auto overflow-x-clip">
           {colors.map((color, idx) => (
             <div
+              key={idx}
               className={`flex justify-center w-10 h-10 gap-1 items-center rounded-md py-1 ${color === currentColor ? "bg-black/5 " : ""}`}
             >
               <button
-                key={idx}
                 onClick={() => setCurrentColor(color)}
                 className="w-7 h-7  cursor-pointer rounded-md shadow "
                 style={{ backgroundColor: color }}
@@ -138,7 +137,7 @@ export default function ProjectArena() {
       <section className="shadow-[5px_5px_0px_0px_rgba(153,142,119)] -translate-x-2 w-10 h-fit bg-[#D9D0BE] absolute bottom-0 top-0 left-0 my-auto z-[999] flex flex-col justify-around">
         <section
           onClick={() => {
-            setCurrentColor(previousColor.current);
+            setCurrentColor(colors[0]);
             setSelectedTool("pencil");
           }}
           className={`h-16 flex items-center justify-center w-full  ${selectedTool === "pencil" ? "translate-x-6" : "-translate-x-4"} transition-transform ease-linear`}
@@ -148,7 +147,6 @@ export default function ProjectArena() {
 
         <section
           onClick={() => {
-            previousColor.current = currentColor;
             setCurrentColor("#00000000");
             setSelectedTool("eraser");
           }}
@@ -159,8 +157,8 @@ export default function ProjectArena() {
 
         <section
           onClick={() => {
+            setCurrentColor(colors[0]);
             setSelectedTool("bucket");
-            setCurrentColor(previousColor.current);
           }}
           className={`h-16 w-full  flex items-center justify-center ${selectedTool === "bucket" ? "translate-x-6" : "-translate-x-4"} transition-transform ease-linear`}
         >
@@ -196,7 +194,10 @@ export default function ProjectArena() {
         <div className="flex flex-col overflow-scroll flex-1">
           <div className=" flex ">
             {Array.from({ length: grids.length }, (_, i) => (
-              <div className="min-w-5 border-black border-l h-6 bg-white text-xs text-gray-500 flex items-center justify-center">
+              <div
+                key={i}
+                className="min-w-5 border-black border-l h-6 bg-white text-xs text-gray-500 flex items-center justify-center"
+              >
                 {i + 1}
               </div>
             ))}

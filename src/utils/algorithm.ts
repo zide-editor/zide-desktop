@@ -41,7 +41,7 @@ export const handleFloodFill = (
   setGrids: Dispatch<SetStateAction<GridCell[][][]>>,
   index: number,
 ) => {
-  const { col, row } = getCellCoords(x, y, 50);
+  const { col, row } = getCellCoords(x, y);
 
   if (grid[row] && grid[row][col]) {
     const targetColor = grid[row][col].color;
@@ -66,7 +66,8 @@ export const updateCellColor = (
   setGrids: Dispatch<SetStateAction<GridCell[][][]>>,
   index: number,
 ) => {
-  const { col, row } = getCellCoords(x, y, 50);
+  console.log(color)
+  const { col, row } = getCellCoords(x, y);
   if (grid[row] && grid[row][col]) {
     const newGrid = grid.map((r, rowIndex) =>
       r.map((cell, colIndex) =>
@@ -91,17 +92,4 @@ export function drawGrid(grid: GridCell[][], ctx: CanvasRenderingContext2D) {
       ctx.strokeRect(cell.x, cell.y, 50, 50);
     });
   });
-}
-
-export default function createSampleArray() {
-  [
-    Array.from({ length: 8 }, (_, row) =>
-      Array.from({ length: 8 }, (_, col) => ({
-        x: col * 50,
-        y: row * 50,
-        color: "white",
-        originalColor: "white",
-      })),
-    ),
-  ];
 }

@@ -1,13 +1,12 @@
 import { primaryColors } from "@/utils/libs";
 import { parseGimpPalette } from "@/utils/parse";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { ColorResult } from "react-color";
 
 export function useColor() {
   const [currentColor, setCurrentColor] = useState<string>("#000000");
   const [colors, setColors] = useState<string[]>(primaryColors);
   const [showColorPicker, setShowColorPicker] = useState<boolean>(false);
-  const previousColor = useRef<string>('#000000')
 
   const handleColorChange = (color: ColorResult) => {
     setColors((state) => {
@@ -45,6 +44,5 @@ export function useColor() {
     handleFileUpload,
     showColorPicker,
     setShowColorPicker,
-    previousColor
   };
 }

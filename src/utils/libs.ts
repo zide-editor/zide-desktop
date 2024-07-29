@@ -7,7 +7,7 @@ export const MENU_DATA = {
   edit: ["Undo", "Redo"],
 };
 
-export const primaryColors : string[] = [
+export const primaryColors: string[] = [
   "#00FFFF",
   "#FF0000",
   "#00FF00",
@@ -16,7 +16,7 @@ export const primaryColors : string[] = [
   "#FF00FF",
 ];
 
-export const getCellCoords = (x: number, y: number, cellSize: number) => ({
-  col: Math.floor(x / cellSize),
-  row: Math.floor(y / cellSize),
+export const getCellCoords = (x: number, y: number) => ({
+  col: Math.floor(x / 50),
+  row: Math.floor(y / 50),
 });

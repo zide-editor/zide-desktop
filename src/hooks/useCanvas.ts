@@ -3,19 +3,19 @@ import { computeCoords, getCellCoords } from "@/utils/libs";
 import { TypeSelectable, TypePoint, GridCell } from "@/utils/type";
 import { handleFloodFill, updateCellColor } from "@/utils/algorithm";
 import { useHistory } from "./useHistory";
-import { writeBinaryFile } from '@tauri-apps/api/fs'
-import { save } from '@tauri-apps/api/dialog'
+import { writeBinaryFile } from "@tauri-apps/api/fs";
+import { save } from "@tauri-apps/api/dialog";
+import useWindow from "./useWindow";
 
 export default function useCanvas(
   gridRows: number,
   gridCols: number,
   currentColor: string,
-  cellSize: number,
 ) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [grids, setGrids] = useState<GridCell[][][]>([
-    Array.from({ length: 8 }, (_, row) =>
-      Array.from({ length: 8 }, (_, col) => ({
+    Array.from({ length: gridRows }, (_, row) =>
+      Array.from({ length: gridCols }, (_, col) => ({
         x: col * 50,
         y: row * 50,
         color: "#00000000",
@@ -26,21 +26,22 @@ export default function useCanvas(
   const playIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [grid, setGrid] = useState<GridCell[][]>(grids[currentIndex]);
+
+  const { windowDim } = useWindow();
+
   const isSpacebarHeld = useRef<boolean>(false);
-
   const canvasRef = useRef<HTMLCanvasElement>(null);
-
   const isDragging = useRef<boolean>(false);
   const isDrawing = useRef<boolean>(false);
-
   const lastPosition = useRef<TypePoint | null>(null);
-
-  const [selectedTool, setSelectedTool] = useState<TypeSelectable>("pencil");
-
-  const [cameraOffset, setCameraOffset] = useState<TypePoint>({ x: 0, y: 0 });
-  const [cameraZoom, setCameraZoom] = useState<number>(1);
   const dragStartPoint = useRef<TypePoint>({ x: 0, y: 0 });
 
+  const [selectedTool, setSelectedTool] = useState<TypeSelectable>("pencil");
+  const [cameraOffset, setCameraOffset] = useState<TypePoint>({
+    x: (windowDim.current?.x || 0) / 2,
+    y: (windowDim.current?.y || 0) / 2,
+  });
+  const [cameraZoom, setCameraZoom] = useState<number>(1);
   const [hoveredCell, setHoveredCell] = useState<{
     row: number;
     col: number;
@@ -49,7 +50,7 @@ export default function useCanvas(
   useEffect(() => {
     setGrid(grids[currentIndex]);
   }, [currentIndex, grids]);
-
+  
   const { undo, redo, saveStateToUndoStack } = useHistory(
     grid,
     setGrid,
@@ -90,10 +91,28 @@ export default function useCanvas(
       lastPosition.current = position;
       saveStateToUndoStack();
 
-      if (selectedTool === 'bucket') {
-        handleFloodFill(adjustedX, adjustedY, currentColor, grid, setGrid, grids, setGrids, currentIndex);
+      if (selectedTool === "bucket") {
+        handleFloodFill(
+          adjustedX,
+          adjustedY,
+          currentColor,
+          grid,
+          setGrid,
+          grids,
+          setGrids,
+          currentIndex,
+        );
       } else {
-        updateCellColor(adjustedX, adjustedY, currentColor, grid, setGrid, grids, setGrids, currentIndex);
+        updateCellColor(
+          adjustedX,
+          adjustedY,
+          currentColor,
+          grid,
+          setGrid,
+          grids,
+          setGrids,
+          currentIndex,
+        );
       }
     }
   };
@@ -124,7 +143,7 @@ export default function useCanvas(
         lastPosition.current = position;
       }
     } else {
-      const { col, row } = getCellCoords(adjustedX, adjustedY, cellSize);
+      const { col, row } = getCellCoords(adjustedX, adjustedY);
       if (grid[row] && grid[row][col]) {
         setHoveredCell({ row, col });
       } else {
@@ -145,9 +164,10 @@ export default function useCanvas(
     const zoomSensitivity = 0.001;
     const newZoom = cameraZoom - e.deltaY * zoomSensitivity;
 
-    const minZoom = 0.5;
+    const minZoom = 0.2;
     const maxZoom = 3;
     const clampedZoom = Math.min(maxZoom, Math.max(minZoom, newZoom));
+    console.log(clampedZoom);
 
     const position = computeCoords(e) || { x: 0, y: 0 };
     const mouseWorldX = (position.x - cameraOffset.x) / cameraZoom;
@@ -178,6 +198,9 @@ export default function useCanvas(
     ctx.translate(cameraOffset.x, cameraOffset.y);
     ctx.scale(cameraZoom, cameraZoom);
 
+    ctx.strokeStyle = "black";
+    ctx.strokeRect(0, 0, gridCols * 50, gridRows * 50);
+
     grid.forEach((row, rowIndex) => {
       row.forEach((cell, colIndex) => {
         ctx.fillStyle =
@@ -186,9 +209,7 @@ export default function useCanvas(
           hoveredCell.col === colIndex
             ? "#75726C"
             : cell.color;
-        ctx.fillRect(cell.x, cell.y, cellSize, cellSize);
-        ctx.strokeStyle = "black";
-        ctx.strokeRect(cell.x, cell.y, cellSize, cellSize);
+        ctx.fillRect(cell.x, cell.y, 50, 50);
       });
     });
     ctx.restore();
@@ -216,8 +237,8 @@ export default function useCanvas(
   const downloadCanvas = async () => {
     if (canvasRef.current) {
       const tempCanvas = document.createElement("canvas");
-      tempCanvas.width = gridCols * cellSize * grids.length;
-      tempCanvas.height = gridRows * cellSize;
+      tempCanvas.width = gridCols * 50 * grids.length;
+      tempCanvas.height = gridRows * 50;
       const tempCtx = tempCanvas.getContext("2d");
       if (tempCtx) {
         grids.forEach((grid, gridIndex) => {
@@ -225,10 +246,10 @@ export default function useCanvas(
             row.forEach((cell, colIndex) => {
               tempCtx.fillStyle = cell.color;
               tempCtx.fillRect(
-                (gridIndex * gridCols + colIndex) * cellSize,
-                rowIndex * cellSize,
-                cellSize,
-                cellSize,
+                (gridIndex * gridCols + colIndex) * 50,
+                rowIndex * 50,
+                50,
+                50,
               );
             });
           });
@@ -316,7 +337,7 @@ export default function useCanvas(
       window.removeEventListener("keyup", keyUpHandler);
       canvasElement.removeEventListener("wheel", wheelHandler);
     };
-  }, [cameraOffset, cameraZoom, grid, cellSize, hoveredCell]);
+  }, [cameraOffset, cameraZoom, grid, hoveredCell]);
 
   return {
     downloadCanvas,
