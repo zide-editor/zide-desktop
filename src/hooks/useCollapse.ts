@@ -1,9 +1,9 @@
 import { useState } from "react";
 
 export default function useCollapse() {
-  const [isTimelineVisibility, setTimelineVisiblity] = useState<boolean>(true);
+  const [isTimelineVisibility, setTimelineVisiblity] = useState<boolean>(false);
   const [isColorSwatchVisibility, setColorSwatchVisiblity] =
-    useState<boolean>(true);
+    useState<boolean>(false);
 
   return {
     isColorSwatchVisibility,

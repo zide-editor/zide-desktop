@@ -8,16 +8,25 @@ import { Bucket, Eraser, Pencil } from "@/assets";
 import useCollapse from "@/hooks/useCollapse";
 import {
   IconCaretDownFilled,
+  IconCaretLeftFilled,
+  IconCaretRightFilled,
   IconCaretUpFilled,
   IconPlus,
   IconUpload,
 } from "@tabler/icons-react";
-import { parseGimpPalette } from "@/utils/parse";
-import { ChromePicker, ColorResult } from "react-color";
+import { ChromePicker } from "react-color";
 
 export default function ProjectArena() {
-  const { colors, setColors, currentColor, setCurrentColor } = useColor();
-  const { isTimelineVisibility, setTimelineVisiblity } = useCollapse();
+  const {
+    colors,
+    setColors,
+    currentColor,
+    setCurrentColor,
+    handleColorChange,
+    handleFileUpload,
+    setShowColorPicker,
+    showColorPicker,
+  } = useColor();
   const {
     downloadCanvas,
     canvasRef,
@@ -31,35 +40,13 @@ export default function ProjectArena() {
     isPlaying,
   } = useCanvas(8, 8, currentColor, 50);
   const [selectedMenu, setSelectedMenu] = useState<TypeSelectableMenu>("none");
+  const {
+    isTimelineVisibility,
+    setTimelineVisiblity,
+    setColorSwatchVisiblity,
+    isColorSwatchVisibility,
+  } = useCollapse();
   const { windowDim } = useWindow();
-  const [showColorPicker, setShowColorPicker] = useState<boolean>(false);
-
-  const handleColorChange = (color: ColorResult) => {
-    setColors((state) => {
-      return state.map((c: string) => {
-        if (currentColor === c) return color.hex;
-        return c;
-      });
-    });
-    setCurrentColor(color.hex);
-  };
-
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e: ProgressEvent<FileReader>) => {
-      const content = e.target?.result;
-      if (typeof content === "string") {
-        const parsedHexCodes = parseGimpPalette(content).slice(1);
-        setColors((state) => {
-          return [...parsedHexCodes, ...state];
-        });
-      }
-    };
-    reader.readAsText(file);
-  };
 
   return (
     <main className="h-screen graph w-full bg-[#F3EEE3] relative flex items-center justify-center overflow-clip">
@@ -69,7 +56,20 @@ export default function ProjectArena() {
         setSelectedMenu={setSelectedMenu}
       />
 
-      <section className="absolute right-0 top-0 bottom-0 my-auto p-4 bg-[#D9D0BE] shadow-[5px_5px_0px_0px_rgba(153,142,119)] max-h-48 min-w-48 flex flex-col">
+      <section
+        className={`absolute right-0 top-0 bottom-0 transition-transform ease-in-out my-auto p-4 bg-[#D9D0BE] shadow-[5px_5px_0px_0px_rgba(153,142,119)] max-h-48 min-w-48 max-w-48 flex flex-col ${isColorSwatchVisibility ? "translate-x-0" : "translate-x-48"} `}
+      >
+        <button
+          onClick={() => setColorSwatchVisiblity(!isColorSwatchVisibility)}
+          className="absolute h-5 w-5 bg-[#D9D0BE]  top-10 -left-5 flex  shadow-[0px_5px_0px_0px_rgba(153,142,119)] items-center justify-center border-black border-y border-l"
+        >
+          {isTimelineVisibility ? (
+            <IconCaretRightFilled />
+          ) : (
+            <IconCaretLeftFilled />
+          )}
+        </button>
+
         <section className="grid grid-cols-4 flex-grow bg-[#D9D0BE] p-2 place-items-stretch color_row gap3 border border-black overflow-y-auto overflow-x-clip">
           {colors.map((color, idx) => (
             <div
@@ -87,7 +87,10 @@ export default function ProjectArena() {
           <div
             className={`flex justify-center w-10 h-10 gap-1 items-center rounded-md py-1 `}
           >
-            <button className="w-7 h-7  cursor-pointer rounded-md shadow inline-flex items-center justify-center bg-gray-400">
+            <button
+              onClick={() => setColors([...colors, "#FFFFFF"])}
+              className="w-7 h-7 cursor-pointer rounded-md shadow inline-flex items-center justify-center bg-gray-400"
+            >
               <IconPlus color="white" size={18} />
             </button>
           </div>
