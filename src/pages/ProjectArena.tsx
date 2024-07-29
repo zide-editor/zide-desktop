@@ -26,6 +26,7 @@ export default function ProjectArena() {
     handleFileUpload,
     setShowColorPicker,
     showColorPicker,
+    previousColor,
   } = useColor();
   const {
     downloadCanvas,
@@ -136,21 +137,31 @@ export default function ProjectArena() {
 
       <section className="shadow-[5px_5px_0px_0px_rgba(153,142,119)] -translate-x-2 w-10 h-fit bg-[#D9D0BE] absolute bottom-0 top-0 left-0 my-auto z-[999] flex flex-col justify-around">
         <section
-          onClick={() => setSelectedTool("pencil")}
+          onClick={() => {
+            setCurrentColor(previousColor.current);
+            setSelectedTool("pencil");
+          }}
           className={`h-16 flex items-center justify-center w-full  ${selectedTool === "pencil" ? "translate-x-6" : "-translate-x-4"} transition-transform ease-linear`}
         >
           <Image alt="pencil" className="rotate-90" src={Pencil} />
         </section>
 
         <section
-          onClick={() => setSelectedTool("eraser")}
+          onClick={() => {
+            previousColor.current = currentColor;
+            setCurrentColor("#00000000");
+            setSelectedTool("eraser");
+          }}
           className={`h-16 flex items-center justify-center w-full  ${selectedTool === "eraser" ? "translate-x-6" : "-translate-x-4"} transition-transform ease-linear`}
         >
           <Image alt="eraser" className="rotate-90" src={Eraser} />
         </section>
 
         <section
-          onClick={() => setSelectedTool("bucket")}
+          onClick={() => {
+            setSelectedTool("bucket");
+            setCurrentColor(previousColor.current);
+          }}
           className={`h-16 w-full  flex items-center justify-center ${selectedTool === "bucket" ? "translate-x-6" : "-translate-x-4"} transition-transform ease-linear`}
         >
           <Image alt="bucket" className="rotate-90" src={Bucket} />
