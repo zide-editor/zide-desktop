@@ -4,7 +4,7 @@ import { TypeSelectableMenu } from "@/utils/type";
 import { useState } from "react";
 import { useColor } from "@/hooks/useColor";
 import Image from "next/image";
-import { Bucket, Eraser, Pencil } from "@/assets";
+import { Bucket, Eraser, Logo, Pencil } from "@/assets";
 import useCollapse from "@/hooks/useCollapse";
 import {
   IconCaretDownFilled,
@@ -38,7 +38,7 @@ export default function ProjectArena() {
     handleSelectGrid,
     togglePlay,
     isPlaying,
-  } = useCanvas(64, 64, currentColor);
+  } = useCanvas(32, 32, currentColor);
   const [selectedMenu, setSelectedMenu] = useState<TypeSelectableMenu>("none");
   const {
     isTimelineVisibility,
@@ -253,6 +253,7 @@ const Navbar = ({
 }) => {
   return (
     <nav className="shadow-[0px_5px_0px_0px_rgba(153,142,119)] p-5 w-full h-14 bg-[#D9D0BE] font-bold font-mono absolute top-0 flex space-x-5 items-center z-[999] select-none">
+      <img src="zide-32x32.png" />
       <section className="relative">
         <h1
           className={`cursor-pointer ${selectedMenu === "file" && "text-[#8D75F1]"}`}
